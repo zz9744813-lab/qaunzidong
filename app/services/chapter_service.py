@@ -7,6 +7,7 @@ from app.services.export_service import ExportService
 from app.utils import render_prompt
 from app.config import settings
 import traceback
+from datetime import datetime, timedelta
 
 class ChapterService:
     def __init__(self, db=None):
@@ -20,6 +21,21 @@ class ChapterService:
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
             raise ValueError("Novel not found")
+
+        # === generation_lock 检查与获取（支持手动和自动）===
+        if novel.generation_lock == 1:
+            if novel.locked_at and (datetime.now() - novel.locked_at) > timedelta(minutes=30):
+                # 锁超时，强制释放
+                novel.generation_lock = 0
+                novel.locked_at = None
+                self.db.commit()
+            else:
+                raise ValueError(f"Novel {novel_id} is currently locked for generation")
+
+        # 加锁
+        novel.generation_lock = 1
+        novel.locked_at = datetime.now()
+        self.db.commit()
 
         try:
             # 获取 Bible
@@ -149,4 +165,9 @@ class ChapterService:
             self.db.add(log)
             self.db.commit()
 
-            raise e
+            raise
+        finally:
+            # 无论成功失败都释放锁
+            novel.generation_lock = 0
+            novel.locked_at = None
+            self.db.commit()

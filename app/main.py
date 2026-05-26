@@ -5,8 +5,12 @@ from app.routes.web_routes import router as web_router
 from app.routes.api_routes import router as api_router
 from app.database import engine, Base
 from app.services.scheduler_service import start_scheduler
+import os
 
 app = FastAPI(title="Novel Auto Factory")
+
+# Ensure static directory exists
+os.makedirs("app/static", exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

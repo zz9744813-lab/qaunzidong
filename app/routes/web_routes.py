@@ -66,7 +66,7 @@ async def web_start_novel(novel_id: int, db: Session = Depends(get_db)):
     novel = db.query(Novel).filter(Novel.id == novel_id).first()
     if novel:
         novel.status = "running"
-        db.commit()
+    db.commit()
     return RedirectResponse(url=f"/novels/{novel_id}", status_code=303)
 
 @router.post("/novels/{novel_id}/pause")
@@ -74,7 +74,7 @@ async def web_pause_novel(novel_id: int, db: Session = Depends(get_db)):
     novel = db.query(Novel).filter(Novel.id == novel_id).first()
     if novel:
         novel.status = "paused"
-        db.commit()
+    db.commit()
     return RedirectResponse(url=f"/novels/{novel_id}", status_code=303)
 
 @router.post("/novels/{novel_id}/export-full")
@@ -95,4 +95,4 @@ async def chapter_detail(request: Request, chapter_id: int, db: Session = Depend
     chapter = db.query(Chapter).filter(Chapter.id == chapter_id).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    return templates.TemplateResponse("chapter_detail.html", {"request": request, "chapter": chapter})
+    return templates.TemplateResponse("chapter_detail.html", {"request": request, "chapter": chapter, "novel": chapter.novel})
