@@ -6,7 +6,7 @@ from app.services.chapter_service import ChapterService
 from app.config import settings
 from loguru import logger
 import threading
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 scheduler = BackgroundScheduler()
 running_novels = set()
@@ -35,12 +35,36 @@ def auto_generate_job():
                     logger.info(f"Novel {novel.id} reached daily limit ({max_daily})")
                     continue
 
+                # 数据库锁检查（防止极端并发）
+                if novel.generation_lock == 1:
+                    if novel.locked_at and (datetime.now() - novel.locked_at) > timedelta(minutes=30):
+                        # 锁超时，强制释放
+                        novel.generation_lock = 0
+                        novel.locked_at = None
+                        db.commit()
+                    else:
+                        logger.info(f"Novel {novel.id} is locked, skipping")
+                        continue
+
+                # 加锁
+                novel.generation_lock = 1
+                novel.locked_at = datetime.now()
+                db.commit()
+
                 chapter_service = ChapterService(db)
                 chapter_service.generate_next_chapter(novel.id)
                 logger.info(f"Auto generated chapter for novel {novel.id}")
+
+                # 解锁
+                novel.generation_lock = 0
+                novel.locked_at = None
+                db.commit()
+
             except Exception as e:
                 logger.error(f"Auto generate failed for novel {novel.id}: {str(e)}")
                 novel.failed_times = (novel.failed_times or 0) + 1
+                novel.generation_lock = 0
+                novel.locked_at = None
                 if novel.failed_times >= settings.scheduler.get("max_failed_times", 5):
                     novel.status = "paused"
                 db.commit()
