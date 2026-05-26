@@ -3,6 +3,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.database import SessionLocal
 from app.models import Novel, Chapter
 from app.services.chapter_service import ChapterService
+from app.config import settings
 from loguru import logger
 import threading
 from datetime import date
@@ -29,8 +30,9 @@ def auto_generate_job():
                     Chapter.created_at >= today
                 ).count()
 
-                if today_chapters >= 10:  # from config
-                    logger.info(f"Novel {novel.id} reached daily limit")
+                max_daily = settings.scheduler.get("max_chapters_per_day", 10)
+                if today_chapters >= max_daily:
+                    logger.info(f"Novel {novel.id} reached daily limit ({max_daily})")
                     continue
 
                 chapter_service = ChapterService(db)
@@ -39,7 +41,7 @@ def auto_generate_job():
             except Exception as e:
                 logger.error(f"Auto generate failed for novel {novel.id}: {str(e)}")
                 novel.failed_times = (novel.failed_times or 0) + 1
-                if novel.failed_times >= 5:
+                if novel.failed_times >= settings.scheduler.get("max_failed_times", 5):
                     novel.status = "paused"
                 db.commit()
             finally:
@@ -51,7 +53,7 @@ def auto_generate_job():
 def start_scheduler():
     scheduler.add_job(
         auto_generate_job,
-        trigger=IntervalTrigger(minutes=10),
+        trigger=IntervalTrigger(minutes=settings.scheduler.get("interval_minutes", 10)),
         id="auto_novel_generator",
         replace_existing=True
     )
