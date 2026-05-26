@@ -29,7 +29,12 @@ class LLMService:
         model = config.get("model", os.getenv(f"{provider.upper()}_MODEL"))
         
         if not base_url or not api_key or not model:
-            raise ValueError(f"Missing API configuration for provider: {provider}")
+            error_msg = f"Missing API configuration for provider: {provider}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # 清理 base_url 末尾的斜杠
+        base_url = base_url.rstrip("/")
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -51,21 +56,27 @@ class LLMService:
                     headers=headers,
                     timeout=self.timeout
                 )
-                response.raise_for_status()
+                
+                if response.status_code != 200:
+                    error_text = response.text[:1000] if response.text else "No response body"
+                    logger.error(f"LLM API error - Provider: {provider}, Model: {model}, Status: {response.status_code}, Response: {error_text}")
+                    response.raise_for_status()
+                
                 data = response.json()
                 
                 if "choices" in data and len(data["choices"]) > 0:
                     content = data["choices"][0]["message"]["content"]
                     return content.strip()
                 else:
-                    logger.warning(f"Empty response from {provider}")
+                    logger.warning(f"Empty response from {provider} - {model}")
                     return ""
                     
             except Exception as e:
-                logger.error(f"LLM call failed (attempt {attempt + 1}/{self.retry_times}): {str(e)}")
+                error_msg = f"LLM call failed (attempt {attempt + 1}/{self.retry_times}) - Provider: {provider}, Model: {model}, Error: {str(e)}"
+                logger.error(error_msg)
                 if attempt < self.retry_times - 1:
                     time.sleep(self.retry_interval)
                 else:
-                    raise Exception(f"LLM call failed after {self.retry_times} attempts: {str(e)}")
+                    raise Exception(error_msg)
         
         return ""
