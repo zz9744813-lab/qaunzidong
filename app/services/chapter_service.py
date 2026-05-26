@@ -5,15 +5,15 @@ from app.services.quality_service import QualityService
 from app.services.memory_service import MemoryService
 from app.services.export_service import ExportService
 from app.utils import render_prompt
-from datetime import datetime
+from app.config import settings
 
 class ChapterService:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db or SessionLocal()
         self.llm = LLMService()
-        self.quality = QualityService()
-        self.memory = MemoryService()
-        self.export = ExportService()
-        self.db = SessionLocal()
+        self.quality = QualityService(self.db)
+        self.memory = MemoryService(self.db)
+        self.export = ExportService(self.db)
 
     def generate_next_chapter(self, novel_id: int) -> Chapter:
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
@@ -24,7 +24,7 @@ class ChapterService:
         bible = self.db.query(NovelBible).filter(NovelBible.novel_id == novel_id).first()
         if not bible:
             from app.services.bible_service import BibleService
-            bible_service = BibleService()
+            bible_service = BibleService(self.db)
             bible = bible_service.generate_bible(novel_id)
 
         # 确定章节号
@@ -74,7 +74,8 @@ class ChapterService:
         # 3. 质检 + 重写
         best_text = draft_text
         best_score = 0
-        max_rewrite = 2  # from config
+        max_rewrite = settings.writing["max_rewrite_times"]
+        min_score = settings.writing["min_quality_score"]
 
         for i in range(max_rewrite + 1):
             review = self.quality.review_chapter(chapter.id, text=best_text)
@@ -84,14 +85,14 @@ class ChapterService:
                 chapter.quality_score = best_score
                 self.db.commit()
 
-            if review.get("score", 0) >= 80:
+            if review.get("score", 0) >= min_score:
                 break
 
             if i < max_rewrite:
                 best_text = self.quality.rewrite_chapter(chapter.id, review)
 
         # 4. 润色
-        if True:  # auto_polish
+        if settings.writing["auto_polish"]:
             polished = self.quality.polish_chapter(chapter.id)
             chapter.final_text = polished
             chapter.status = "polished"

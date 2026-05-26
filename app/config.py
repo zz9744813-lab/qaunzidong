@@ -1,8 +1,22 @@
 import os
 from dotenv import load_dotenv
 import yaml
+import re
 
 load_dotenv()
+
+def _substitute_env_vars(value):
+    """递归替换 ${VAR} 格式的环境变量"""
+    if isinstance(value, str):
+        def replace_var(match):
+            var_name = match.group(1)
+            return os.getenv(var_name, match.group(0))
+        return re.sub(r'\$\{([^}]+)\}', replace_var, value)
+    elif isinstance(value, dict):
+        return {k: _substitute_env_vars(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [_substitute_env_vars(item) for item in value]
+    return value
 
 class Settings:
     def __init__(self):
@@ -51,7 +65,9 @@ class Settings:
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
-                return config.get("llm", {})
+                llm_config = config.get("llm", {})
+                # 递归替换环境变量
+                return _substitute_env_vars(llm_config)
         return {}
 
 settings = Settings()

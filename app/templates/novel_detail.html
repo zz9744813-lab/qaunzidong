@@ -10,10 +10,22 @@
     <p>当前章节: {{ novel.current_chapter_no }}</p>
     
     <h2>操作</h2>
-    <a href="/api/novels/{{ novel.id }}/generate-bible">生成设定</a> |
-    <a href="/api/novels/{{ novel.id }}/generate-next-chapter">生成下一章</a> |
-    <a href="/api/novels/{{ novel.id }}/start">启动自动运行</a> |
-    <a href="/api/novels/{{ novel.id }}/pause">暂停自动运行</a>
+    
+    <form method="post" action="/novels/{{ novel.id }}/generate-bible" style="display:inline;">
+        <button type="submit">生成设定</button>
+    </form>
+    
+    <form method="post" action="/novels/{{ novel.id }}/generate-next-chapter" style="display:inline;">
+        <button type="submit">生成下一章</button>
+    </form>
+    
+    <form method="post" action="/novels/{{ novel.id }}/start" style="display:inline;">
+        <button type="submit">启动自动运行</button>
+    </form>
+    
+    <form method="post" action="/novels/{{ novel.id }}/pause" style="display:inline;">
+        <button type="submit">暂停自动运行</button>
+    </form>
     
     <h2>小说设定</h2>
     {% if novel.bibles %}
