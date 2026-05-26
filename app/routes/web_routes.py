@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Novel
+from app.models import Novel, TaskLog
 from app.services.chapter_service import ChapterService
 from app.services.bible_service import BibleService
 
@@ -46,3 +46,8 @@ async def create_novel(
 async def novel_detail(request: Request, novel_id: int, db: Session = Depends(get_db)):
     novel = db.query(Novel).filter(Novel.id == novel_id).first()
     return templates.TemplateResponse("novel_detail.html", {"request": request, "novel": novel})
+
+@router.get("/logs", response_class=HTMLResponse)
+async def logs_page(request: Request, db: Session = Depends(get_db)):
+    logs = db.query(TaskLog).order_by(TaskLog.created_at.desc()).limit(50).all()
+    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs})

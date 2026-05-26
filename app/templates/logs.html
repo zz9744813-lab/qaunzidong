@@ -5,7 +5,26 @@
 </head>
 <body>
     <h1>任务日志</h1>
-    <p>日志页面正在开发中...</p>
+    <table border="1">
+        <tr>
+            <th>时间</th>
+            <th>任务类型</th>
+            <th>小说ID</th>
+            <th>章节ID</th>
+            <th>状态</th>
+            <th>消息</th>
+        </tr>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.created_at }}</td>
+            <td>{{ log.task_type }}</td>
+            <td>{{ log.novel_id }}</td>
+            <td>{{ log.chapter_id }}</td>
+            <td>{{ log.status }}</td>
+            <td>{{ log.message }}</td>
+        </tr>
+        {% endfor %}
+    </table>
     <a href="/novels">返回列表</a>
 </body>
 </html>
