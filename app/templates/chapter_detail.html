@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chapter {{ chapter.chapter_no }} - {{ novel.title }}</title>
+</head>
+<body>
+    <h1>第 {{ chapter.chapter_no }} 章 - {{ chapter.title or "未命名" }}</h1>
+    
+    <h2>细纲</h2>
+    <pre>{{ chapter.outline }}</pre>
+    
+    <h2>正文</h2>
+    <pre>{{ chapter.final_text or chapter.draft_text }}</pre>
+    
+    <h2>质量分: {{ chapter.quality_score }}</h2>
+    
+    <a href="/novels/{{ novel.id }}">返回小说</a>
+</body>
+</html>
