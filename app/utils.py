@@ -8,6 +8,9 @@ def count_words(text: str) -> int:
 
 def safe_parse_json(text: str) -> Optional[Dict[str, Any]]:
     """安全解析 JSON，处理模型返回的各种格式"""
+    if not text or not isinstance(text, str):
+        return None
+    
     text = text.strip()
     
     # 尝试直接解析
@@ -16,10 +19,10 @@ def safe_parse_json(text: str) -> Optional[Dict[str, Any]]:
     except json.JSONDecodeError:
         pass
     
-    # 去除 ```json 和 ```
+    # 去除 markdown code block
     if text.startswith("```json"):
         text = text[7:]
-    if text.startswith("```"):
+    elif text.startswith("```"):
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
@@ -33,6 +36,14 @@ def safe_parse_json(text: str) -> Optional[Dict[str, Any]]:
     
     # 尝试截取第一个 { 到最后一个 }
     match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    
+    # 尝试找 JSON 数组
+    match = re.search(r'\[.*\]', text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
