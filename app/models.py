@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -13,7 +13,7 @@ class Novel(Base):
     description = Column(Text)
     target_words = Column(Integer, default=1000000)
     chapter_words = Column(Integer, default=3500)
-    status = Column(String, default="draft")  # draft, running, paused, completed, failed
+    status = Column(String, default="draft")
     current_chapter_no = Column(Integer, default=0)
     total_words = Column(Integer, default=0)
     failed_times = Column(Integer, default=0)
@@ -59,11 +59,15 @@ class Chapter(Base):
     quality_score = Column(Integer, default=0)
     rewrite_count = Column(Integer, default=0)
     word_count = Column(Integer, default=0)
-    status = Column(String, default="pending")  # pending, outline_done, draft_done, review_done, rewrite_needed, polished, final, low_quality, failed
+    status = Column(String, default="pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     novel = relationship("Novel", back_populates="chapters")
+
+    __table_args__ = (
+        UniqueConstraint("novel_id", "chapter_no", name="uq_novel_chapter_no"),
+    )
 
 class StoryMemory(Base):
     __tablename__ = "story_memories"
