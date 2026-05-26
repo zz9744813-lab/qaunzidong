@@ -76,8 +76,11 @@ class StoryMemory(Base):
     novel_id = Column(Integer, ForeignKey("novels.id"))
     chapter_id = Column(Integer, ForeignKey("chapters.id"), nullable=True)
     memory_type = Column(String)
+    entity_name = Column(String, nullable=True)  # 角色名、势力名等
     content = Column(Text)
     importance = Column(Integer, default=5)
+    is_resolved = Column(Integer, default=0)  # 0=未解决, 1=已解决
+    tags = Column(String, nullable=True)  # 逗号分隔的标签
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
