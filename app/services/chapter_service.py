@@ -33,16 +33,19 @@ class ChapterService:
             last_chapter = self.db.query(Chapter).filter(Chapter.novel_id == novel_id).order_by(Chapter.chapter_no.desc()).first()
             chapter_no = (last_chapter.chapter_no + 1) if last_chapter else 1
 
-            # 获取最近摘要
+            # 获取最近摘要 + 重要长期记忆
             recent_memories = self.db.query(StoryMemory).filter(
                 StoryMemory.novel_id == novel_id
             ).order_by(StoryMemory.created_at.desc()).limit(5).all()
             recent_summaries = "\n".join([m.content for m in recent_memories])
 
+            important_memories = self.memory.get_important_memories(novel_id, limit=8)
+            important_summary = "\n".join([f"[{m.memory_type}] {m.content}" for m in important_memories])
+
             # 1. 生成细纲
             outline_prompt = render_prompt("chapter_outline.md", {
                 "novel_bible": bible.full_text,
-                "recent_summaries": recent_summaries,
+                "recent_summaries": recent_summaries + "\n\n重要记忆:\n" + important_summary,
                 "chapter_no": chapter_no,
                 "style": novel.style,
                 "chapter_words": novel.chapter_words,
@@ -63,7 +66,7 @@ class ChapterService:
             # 2. 生成正文
             write_prompt = render_prompt("chapter_write.md", {
                 "novel_bible": bible.full_text,
-                "recent_summaries": recent_summaries,
+                "recent_summaries": recent_summaries + "\n\n重要记忆:\n" + important_summary,
                 "chapter_outline": outline,
                 "style": novel.style,
                 "chapter_words": novel.chapter_words,
