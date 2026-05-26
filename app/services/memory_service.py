@@ -58,3 +58,11 @@ class MemoryService:
                 )
                 self.db.add(mem)
         self.db.commit()
+
+    def get_important_memories(self, novel_id: int, limit: int = 10):
+        """获取重要的长期记忆（未解决 + 高重要性）"""
+        memories = self.db.query(StoryMemory).filter(
+            StoryMemory.novel_id == novel_id,
+            StoryMemory.is_resolved == 0
+        ).order_by(StoryMemory.importance.desc()).limit(limit).all()
+        return memories
