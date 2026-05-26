@@ -6,7 +6,7 @@ from app.services.chapter_service import ChapterService
 from app.config import settings
 from loguru import logger
 import threading
-from datetime import date
+from datetime import date, datetime
 
 scheduler = BackgroundScheduler()
 running_novels = set()
