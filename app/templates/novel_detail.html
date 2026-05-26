@@ -11,7 +11,9 @@
     
     <h2>操作</h2>
     <a href="/api/novels/{{ novel.id }}/generate-bible">生成设定</a> |
-    <a href="/api/novels/{{ novel.id }}/generate-next-chapter">生成下一章</a>
+    <a href="/api/novels/{{ novel.id }}/generate-next-chapter">生成下一章</a> |
+    <a href="/api/novels/{{ novel.id }}/start">启动自动运行</a> |
+    <a href="/api/novels/{{ novel.id }}/pause">暂停自动运行</a>
     
     <h2>小说设定</h2>
     {% if novel.bibles %}
