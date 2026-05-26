@@ -27,6 +27,10 @@
         <button type="submit">暂停自动运行</button>
     </form>
     
+    <form method="post" action="/novels/{{ novel.id }}/export-full" style="display:inline;">
+        <button type="submit">导出整本小说</button>
+    </form>
+    
     <h2>小说设定</h2>
     {% if novel.bibles %}
     <pre>{{ novel.bibles[0].full_text[:500] }}...</pre>

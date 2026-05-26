@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Novel, TaskLog, Chapter
 from app.services.chapter_service import ChapterService
 from app.services.bible_service import BibleService
+from app.services.export_service import ExportService
+import os
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -73,6 +75,14 @@ async def web_pause_novel(novel_id: int, db: Session = Depends(get_db)):
     if novel:
         novel.status = "paused"
         db.commit()
+    return RedirectResponse(url=f"/novels/{novel_id}", status_code=303)
+
+@router.post("/novels/{novel_id}/export-full")
+async def web_export_full(novel_id: int, db: Session = Depends(get_db)):
+    service = ExportService(db)
+    path = service.export_full_novel(novel_id, format="markdown")
+    if path and os.path.exists(path):
+        return FileResponse(path, filename=os.path.basename(path))
     return RedirectResponse(url=f"/novels/{novel_id}", status_code=303)
 
 @router.get("/logs", response_class=HTMLResponse)
