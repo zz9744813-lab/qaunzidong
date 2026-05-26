@@ -2,10 +2,39 @@
 <html>
 <head>
     <title>Novel Auto Factory</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        .btn { padding: 5px 10px; background: #4CAF50; color: white; text-decoration: none; }
+    </style>
 </head>
 <body>
     <h1>Novel Auto Factory</h1>
-    <p>项目正在构建中...</p>
-    <p>当前已实现核心生成链路。</p>
+    <a href="/novels/new" class="btn">创建新小说</a>
+    <h2>小说列表</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>标题</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>当前章节</th>
+            <th>操作</th>
+        </tr>
+        {% for novel in novels %}
+        <tr>
+            <td>{{ novel.id }}</td>
+            <td>{{ novel.title }}</td>
+            <td>{{ novel.genre }}</td>
+            <td>{{ novel.status }}</td>
+            <td>{{ novel.current_chapter_no }}</td>
+            <td>
+                <a href="/novels/{{ novel.id }}">详情</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
 </html>

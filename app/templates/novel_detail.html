@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ novel.title }} - Novel Auto Factory</title>
+</head>
+<body>
+    <h1>{{ novel.title }}</h1>
+    <p>类型: {{ novel.genre }}</p>
+    <p>状态: {{ novel.status }}</p>
+    <p>当前章节: {{ novel.current_chapter_no }}</p>
+    
+    <h2>操作</h2>
+    <a href="/api/novels/{{ novel.id }}/generate-bible">生成设定</a> |
+    <a href="/api/novels/{{ novel.id }}/generate-next-chapter">生成下一章</a>
+    
+    <h2>小说设定</h2>
+    {% if novel.bibles %}
+    <pre>{{ novel.bibles[0].full_text[:500] }}...</pre>
+    {% else %}
+    <p>尚未生成设定</p>
+    {% endif %}
+    
+    <a href="/novels">返回列表</a>
+</body>
+</html>
