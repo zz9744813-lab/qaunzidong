@@ -49,7 +49,7 @@ async def novel_detail(request: Request, novel_id: int, db: Session = Depends(ge
 
 @router.post("/novels/{novel_id}/generate-bible")
 async def web_generate_bible(novel_id: int, db: Session = Depends(get_db)):
-    service = BibleService()
+    service = BibleService(db)
     service.generate_bible(novel_id)
     return RedirectResponse(url=f"/novels/{novel_id}", status_code=303)
 

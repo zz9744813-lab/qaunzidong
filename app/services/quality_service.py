@@ -4,9 +4,9 @@ from app.services.llm_service import LLMService
 from app.utils import render_prompt, safe_parse_json
 
 class QualityService:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db or SessionLocal()
         self.llm = LLMService()
-        self.db = SessionLocal()
 
     def review_chapter(self, chapter_id: int, text: str = None) -> dict:
         chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()

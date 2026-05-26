@@ -4,9 +4,9 @@ from app.services.llm_service import LLMService
 from app.utils import render_prompt, safe_parse_json
 
 class MemoryService:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db or SessionLocal()
         self.llm = LLMService()
-        self.db = SessionLocal()
 
     def extract_memory(self, chapter_id: int):
         chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
@@ -21,7 +21,6 @@ class MemoryService:
         parsed = safe_parse_json(result)
 
         if not parsed:
-            # Fallback: at least save summary
             parsed = {
                 "chapter_summary": (chapter.final_text or "")[:300],
                 "character_changes": [],
@@ -34,11 +33,9 @@ class MemoryService:
                 "next_hints": []
             }
 
-        # Save summary
         chapter.summary = parsed.get("chapter_summary", "")
         self.db.commit()
 
-        # Save memories
         memory_types = [
             ("character_changes", "character_change"),
             ("relationship_changes", "relationship_change"),

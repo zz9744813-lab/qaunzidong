@@ -9,13 +9,13 @@ router = APIRouter()
 
 @router.post("/novels/{novel_id}/generate-bible")
 def generate_bible(novel_id: int, db: Session = Depends(get_db)):
-    service = BibleService()
+    service = BibleService(db)
     bible = service.generate_bible(novel_id)
     return {"message": "Bible generated", "bible_id": bible.id}
 
 @router.post("/novels/{novel_id}/generate-next-chapter")
 def generate_next_chapter(novel_id: int, db: Session = Depends(get_db)):
-    service = ChapterService()
+    service = ChapterService(db)
     chapter = service.generate_next_chapter(novel_id)
     return {"message": "Chapter generated", "chapter_no": chapter.chapter_no}
 

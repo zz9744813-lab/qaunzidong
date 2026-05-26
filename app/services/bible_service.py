@@ -2,12 +2,11 @@ from app.database import SessionLocal
 from app.models import Novel, NovelBible, TaskLog
 from app.services.llm_service import LLMService
 from app.utils import render_prompt
-from datetime import datetime
 
 class BibleService:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db or SessionLocal()
         self.llm = LLMService()
-        self.db = SessionLocal()
 
     def generate_bible(self, novel_id: int) -> NovelBible:
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
