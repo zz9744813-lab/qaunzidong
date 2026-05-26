@@ -53,6 +53,14 @@ def auto_generate_job():
         db.close()
 
 def start_scheduler():
+    if not settings.scheduler.get("enabled", True):
+        logger.info("Scheduler disabled in config, skipping start")
+        return
+
+    if scheduler.running:
+        logger.info("Scheduler already running, skipping start")
+        return
+
     scheduler.add_job(
         auto_generate_job,
         trigger=IntervalTrigger(minutes=settings.scheduler.get("interval_minutes", 10)),

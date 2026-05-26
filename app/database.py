@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+from app.config import settings
 
-DATABASE_URL = "sqlite:///data/novel_factory.db"
+DATABASE_URL = settings.database_url
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
