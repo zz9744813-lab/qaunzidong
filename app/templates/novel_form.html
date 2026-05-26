@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>创建新小说 - Novel Auto Factory</title>
+</head>
+<body>
+    <h1>创建新小说</h1>
+    <form method="post" action="/novels/new">
+        <p>标题: <input type="text" name="title" required></p>
+        <p>类型: <input type="text" name="genre" required></p>
+        <p>文风: <textarea name="style" required></textarea></p>
+        <p>补充说明: <textarea name="description"></textarea></p>
+        <button type="submit">创建</button>
+    </form>
+    <a href="/novels">返回列表</a>
+</body>
+</html>

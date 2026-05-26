@@ -1,0 +1,56 @@
+app:
+  name: "Novel Auto Factory"
+  debug: true
+
+database:
+  url: "sqlite:///data/novel_factory.db"
+
+llm:
+  timeout_seconds: 180
+  retry_times: 3
+  retry_interval_seconds: 5
+
+  providers:
+    main:
+      base_url: "${MAIN_BASE_URL}"
+      api_key: "${MAIN_API_KEY}"
+      model: "${MAIN_MODEL}"
+      temperature: 0.85
+      max_tokens: 8000
+
+    editor:
+      base_url: "${EDITOR_BASE_URL}"
+      api_key: "${EDITOR_API_KEY}"
+      model: "${EDITOR_MODEL}"
+      temperature: 0.55
+      max_tokens: 8000
+
+    checker:
+      base_url: "${CHECKER_BASE_URL}"
+      api_key: "${CHECKER_API_KEY}"
+      model: "${CHECKER_MODEL}"
+      temperature: 0.2
+      max_tokens: 4000
+
+writing:
+  default_chapter_words: 3500
+  recent_summary_count: 5
+  min_quality_score: 80
+  max_rewrite_times: 2
+  auto_polish: true
+  auto_memory_extract: true
+
+scheduler:
+  enabled: true
+  interval_minutes: 10
+  max_chapters_per_day: 10
+  max_failed_times: 5
+
+export:
+  export_dir: "data/exports"
+  enable_markdown: true
+  enable_txt: true
+
+log:
+  log_dir: "data/logs"
+  log_file: "data/logs/app.log"
