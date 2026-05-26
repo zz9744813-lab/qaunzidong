@@ -22,6 +22,20 @@
     <p>尚未生成设定</p>
     {% endif %}
     
+    <h2>章节列表</h2>
+    {% if novel.chapters %}
+    <ul>
+    {% for ch in novel.chapters %}
+        <li>
+            <a href="/chapters/{{ ch.id }}">第 {{ ch.chapter_no }} 章 - {{ ch.title or "未命名" }}</a>
+            (字数: {{ ch.word_count }}, 质量: {{ ch.quality_score }})
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>尚未生成章节</p>
+    {% endif %}
+    
     <a href="/novels">返回列表</a>
 </body>
 </html>
