@@ -1,10 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from app.database import SessionLocal
-from app.models import Novel
+from app.models import Novel, Chapter
 from app.services.chapter_service import ChapterService
 from loguru import logger
 import threading
+from datetime import date
 
 scheduler = BackgroundScheduler()
 running_novels = set()
@@ -21,7 +22,18 @@ def auto_generate_job():
                 running_novels.add(novel.id)
 
             try:
-                chapter_service = ChapterService()
+                # 检查今日已生成章节数
+                today = date.today()
+                today_chapters = db.query(Chapter).filter(
+                    Chapter.novel_id == novel.id,
+                    Chapter.created_at >= today
+                ).count()
+
+                if today_chapters >= 10:  # from config
+                    logger.info(f"Novel {novel.id} reached daily limit")
+                    continue
+
+                chapter_service = ChapterService(db)
                 chapter_service.generate_next_chapter(novel.id)
                 logger.info(f"Auto generated chapter for novel {novel.id}")
             except Exception as e:
