@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "编辑" if provider else "新增" }}模型配置 - AI 小说 Agent 工作台{% endblock %}
+{% block page_title %}{{ "编辑" if provider else "新增" }}模型配置{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <h3>{{ "编辑" if provider else "新增" }} LLM Provider</h3>
+    </div>
+    <div class="card-body">
+        {% set action_url = "/settings/llm/" ~ provider.id ~ "/edit" if provider else "/settings/llm/new" %}
+        <form action="{{ action_url }}" method="post">
+            <div class="form-group">
+                <label>配置名称</label>
+                <input type="text" name="name" class="form-control" value="{{ provider.name if provider else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>角色</label>
+                <select name="role" class="form-control" required>
+                    {% set roles = ['main', 'editor', 'checker', 'memory', 'backup'] %}
+                    {% for r in roles %}
+                    <option value="{{ r }}" {% if provider and provider.role == r %}selected{% endif %}>{{ r }} - {{ {'main':'主写作模型','editor':'润色模型','checker':'质检模型','memory':'记忆提取模型','backup':'备用模型'}[r] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Base URL</label>
+                <input type="text" name="base_url" class="form-control" value="{{ provider.base_url if provider else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>API Key</label>
+                <input type="password" name="api_key" class="form-control" 
+                       value="{{ '********' if provider else '' }}" 
+                       placeholder="sk-..." {% if not provider %}required{% endif %}>
+                <small style="color:#64748b">编辑时留空或输入 ******** 则不修改 API Key</small>
+            </div>
+
+            <div class="form-group">
+                <label>模型名称</label>
+                <input type="text" name="model" class="form-control" value="{{ provider.model if provider else '' }}" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label>Temperature</label>
+                    <input type="text" name="temperature" class="form-control" value="{{ provider.temperature if provider else '0.85' }}">
+                </div>
+                <div class="form-group">
+                    <label>Max Tokens</label>
+                    <input type="number" name="max_tokens" class="form-control" value="{{ provider.max_tokens if provider else 8000 }}">
+                </div>
+                <div class="form-group">
+                    <label>超时时间(秒)</label>
+                    <input type="number" name="timeout_seconds" class="form-control" value="{{ provider.timeout_seconds if provider else 180 }}">
+                </div>
+            </div>
+
+            <div style="margin-top: 32px; display: flex; gap: 16px;">
+                <button type="submit" class="btn btn-primary" style="flex:1">{{ "保存修改" if provider else "保存配置" }}</button>
+                <a href="/settings/llm" class="btn btn-secondary" style="flex:1">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

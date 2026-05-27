@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Prompt 管理 - AI 小说 Agent 工作台{% endblock %}
+{% block page_title %}Prompt 模板管理{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Prompt 模板列表</h3>
+    </div>
+    <div class="card-body">
+        {% if files %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>文件名</th>
+                    <th>描述</th>
+                    <th width="200">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td><code>{{ file }}</code></td>
+                    <td>
+                        {% if 'bible' in file %}小说 Bible 生成{% elif 'outline' in file %}章节细纲{% elif 'write' in file %}正文生成{% elif 'review' in file %}质检{% elif 'polish' in file %}润色{% elif 'rewrite' in file %}重写{% elif 'memory' in file %}记忆提取{% else %}-{% endif %}
+                    </td>
+                    <td>
+                        <a href="/prompts/{{ file }}" class="btn btn-secondary btn-sm">编辑</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#64748b;">没有找到 Prompt 文件</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

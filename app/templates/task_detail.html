@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}任务详情 #{{ task.id }}{% endblock %}
+{% block page_title %}任务 #{{ task.id }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>任务详情</h3>
+        <span class="badge 
+            {% if task.status == 'success' %}badge-success
+            {% elif task.status == 'failed' %}badge-failed
+            {% elif task.status == 'running' %}badge-running
+            {% else %}badge-draft{% endif %}">
+            {{ task.status }}
+        </span>
+    </div>
+    <div class="card-body">
+        <p><strong>任务类型：</strong> {{ task.task_type }}</p>
+        <p><strong>当前步骤：</strong> {{ task.current_step or '-' }}</p>
+        <p><strong>进度：</strong> {{ task.progress }}% ({{ task.finished_steps }}/{{ task.total_steps }})</p>
+        
+        {% if task.error_message %}
+        <div style="background:#3f1f1f; padding:12px; border-radius:6px; margin:16px 0;">
+            <strong style="color:#f87171;">错误信息：</strong><br>
+            <span style="color:#fecaca;">{{ task.error_message }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>执行步骤</h3>
+    </div>
+    <div class="card-body">
+        {% if task.steps %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>步骤</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>开始时间</th>
+                    <th>结束时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for step in task.steps %}
+                <tr>
+                    <td>{{ step.step_name }}</td>
+                    <td>{{ step.provider_role or '-' }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if step.status == 'success' %}badge-success
+                            {% elif step.status == 'failed' %}badge-failed
+                            {% elif step.status == 'running' %}badge-running
+                            {% else %}badge-draft{% endif %}">
+                            {{ step.status }}
+                        </span>
+                    </td>
+                    <td>{{ step.started_at.strftime('%H:%M:%S') if step.started_at else '-' }}</td>
+                    <td>{{ step.finished_at.strftime('%H:%M:%S') if step.finished_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#64748b;">暂无步骤记录</p>
+        {% endif %}
+    </div>
+</div>
+
+<a href="/novels/{{ task.novel_id }}" class="btn btn-secondary">返回小说</a>
+{% endblock %}

@@ -28,6 +28,18 @@
                     <span class="icon">📋</span>
                     <span>任务日志</span>
                 </a>
+                <a href="/prompts" class="nav-item {% if request.url.path.startswith('/prompts') %}active{% endif %}">
+                    <span class="icon">📝</span>
+                    <span>Prompt 管理</span>
+                </a>
+                <a href="/settings/llm" class="nav-item {% if request.url.path.startswith('/settings') %}active{% endif %}">
+                    <span class="icon">⚙️</span>
+                    <span>模型配置</span>
+                </a>
+                <a href="/settings/system" class="nav-item {% if request.url.path == '/settings/system' %}active{% endif %}">
+                    <span class="icon">🔧</span>
+                    <span>系统设置</span>
+                </a>
                 <a href="/api-docs" class="nav-item" target="_blank">
                     <span class="icon">📖</span>
                     <span>API 文档</span>

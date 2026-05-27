@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}系统设置 - AI 小说 Agent 工作台{% endblock %}
+{% block page_title %}系统参数配置{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px;">
+    <div class="card-header">
+        <h3>系统参数配置</h3>
+    </div>
+    <div class="card-body">
+        <form action="/settings/system" method="post">
+            
+            <h4 style="margin: 24px 0 12px;">写作参数</h4>
+            
+            <div class="form-group">
+                <label>默认单章字数</label>
+                <input type="number" name="default_chapter_words" class="form-control" value="{{ settings['writing.default_chapter_words'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>最低质量分</label>
+                <input type="number" name="min_quality_score" class="form-control" value="{{ settings['writing.min_quality_score'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>最大重写次数</label>
+                <input type="number" name="max_rewrite_times" class="form-control" value="{{ settings['writing.max_rewrite_times'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="auto_polish" value="true" {% if settings['writing.auto_polish'] == 'true' %}checked{% endif %}> 自动润色
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="auto_memory_extract" value="true" {% if settings['writing.auto_memory_extract'] == 'true' %}checked{% endif %}> 自动记忆提取
+                </label>
+            </div>
+            
+            <h4 style="margin: 32px 0 12px;">调度参数</h4>
+            
+            <div class="form-group">
+                <label>自动生成间隔（分钟）</label>
+                <input type="number" name="interval_minutes" class="form-control" value="{{ settings['scheduler.interval_minutes'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>每日最大章节数</label>
+                <input type="number" name="max_chapters_per_day" class="form-control" value="{{ settings['scheduler.max_chapters_per_day'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>最大失败次数</label>
+                <input type="number" name="max_failed_times" class="form-control" value="{{ settings['scheduler.max_failed_times'] }}">
+            </div>
+            
+            <h4 style="margin: 32px 0 12px;">导出设置</h4>
+            
+            <div class="form-group">
+                <label>导出目录</label>
+                <input type="text" name="export_dir" class="form-control" value="{{ settings['export.export_dir'] }}">
+            </div>
+            
+            <div style="margin-top: 32px;">
+                <button type="submit" class="btn btn-primary">保存设置</button>
+                <a href="/settings/llm" class="btn btn-secondary">模型配置</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

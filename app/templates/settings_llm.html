@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}模型配置 - AI 小说 Agent 工作台{% endblock %}
+{% block page_title %}模型 API 配置中心{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>已配置的模型</h3>
+        <a href="/settings/llm/new" class="btn btn-primary btn-sm">+ 新增模型配置</a>
+    </div>
+    <div class="card-body">
+        {% if providers %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>角色</th>
+                    <th>模型</th>
+                    <th>Base URL</th>
+                    <th>状态</th>
+                    <th width="320">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in providers %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td><span class="badge badge-draft">{{ p.role }}</span></td>
+                    <td>{{ p.model }}</td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ p.base_url }}</td>
+                    <td>
+                        {% if p.enabled %}
+                            <span class="badge badge-success">启用</span>
+                        {% else %}
+                            <span class="badge badge-draft">禁用</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/settings/llm/{{ p.id }}/edit" class="btn btn-secondary btn-sm">编辑</a>
+                        <button onclick="testConnection({{ p.id }}, this)" class="btn btn-primary btn-sm">测试连接</button>
+                        <form action="/settings/llm/{{ p.id }}/toggle" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-secondary btn-sm">{{ '禁用' if p.enabled else '启用' }}</button>
+                        </form>
+                        <form action="/settings/llm/{{ p.id }}/delete" method="post" style="display:inline" onsubmit="return confirm('确定删除此模型配置？')">
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding:40px 0; text-align:center; color:#64748b;">
+            <p>还没有配置任何模型</p>
+            <a href="/settings/llm/new" class="btn btn-primary" style="margin-top:16px">立即添加第一个模型</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>说明</h3>
+    </div>
+    <div class="card-body">
+        <ul style="line-height:1.8; color:#475569;">
+            <li>优先使用数据库中的模型配置</li>
+            <li>API Key 在页面上会隐藏显示</li>
+            <li>点击“测试连接”可以验证模型是否可用</li>
+            <li>角色说明：main（主写作）、editor（润色）、checker（质检）、memory（记忆提取）、backup（备用）</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function testConnection(providerId, btn) {
+    const originalText = btn.innerText;
+    btn.innerText = '测试中...';
+    btn.disabled = true;
+
+    fetch(`/settings/llm/${providerId}/test`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ 连接成功！\n模型：${data.model || ''}`);
+        } else {
+            alert(`❌ 连接失败\n${data.message}\n${data.detail || ''}`);
+        }
+    })
+    .catch(err => {
+        alert('请求失败: ' + err);
+    })
+    .finally(() => {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

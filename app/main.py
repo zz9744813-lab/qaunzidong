@@ -1,11 +1,18 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import os
+
+# 定义 templates 必须在导入 router 之前
+templates = Jinja2Templates(directory="app/templates")
+
 from app.routes.web_routes import router as web_router
 from app.routes.api_routes import router as api_router
+from app.routes.settings_routes import router as settings_router
+from app.routes.prompt_routes import router as prompt_router
+from app.routes.system_settings_routes import router as system_router
 from app.database import engine, Base
 from app.services.scheduler_service import start_scheduler
-import os
 
 app = FastAPI(
     title="小说自动工厂 API",
@@ -23,12 +30,12 @@ os.makedirs("app/static/js", exist_ok=True)
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Templates
-templates = Jinja2Templates(directory="app/templates")
-
 # Include routers (web routes hidden from Swagger)
 app.include_router(web_router, include_in_schema=False)
 app.include_router(api_router, prefix="/api")
+app.include_router(settings_router, prefix="")
+app.include_router(prompt_router, prefix="")
+app.include_router(system_router, prefix="")
 
 # Startup event
 @app.on_event("startup")

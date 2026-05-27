@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}编辑 {{ filename }} - Prompt 管理{% endblock %}
+{% block page_title %}编辑 Prompt: {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1200px;">
+    <div class="card-header">
+        <h3>{{ filename }}</h3>
+    </div>
+    <div class="card-body">
+        <form action="/prompts/{{ filename }}" method="post">
+            <div class="form-group">
+                <textarea name="content" class="form-control" rows="25" style="font-family: monospace; font-size: 14px; background: #1e2937; color: #e2e8f0; border: 1px solid #475569;">{{ content }}</textarea>
+            </div>
+            
+            <div style="margin-top: 20px; display: flex; gap: 12px;">
+                <button type="submit" class="btn btn-primary">保存修改</button>
+                <a href="/prompts" class="btn btn-secondary">返回列表</a>
+                <form action="/prompts/{{ filename }}/reset" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('确定恢复默认？')">恢复默认</button>
+                </form>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
