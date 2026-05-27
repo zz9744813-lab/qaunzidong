@@ -76,7 +76,8 @@ async def update_llm_provider(
     provider.role = role
     provider.base_url = base_url
     if api_key and api_key != "********":  # 只有用户修改时才更新
-        provider.api_key_encrypted = api_key
+        from app.utils import encrypt_api_key
+        provider.api_key_encrypted = encrypt_api_key(api_key)
     provider.model = model
     provider.temperature = temperature
     provider.max_tokens = max_tokens
@@ -109,7 +110,8 @@ async def test_llm_provider(provider_id: int, db: Session = Depends(get_db)):
     
     try:
         headers = {
-            "Authorization": f"Bearer {provider.api_key_encrypted}",
+            from app.utils import decrypt_api_key
+            "Authorization": f"Bearer {decrypt_api_key(provider.api_key_encrypted)}",
             "Content-Type": "application/json"
         }
         payload = {

@@ -62,45 +62,23 @@ async def novel_detail(request: Request, novel_id: int, db: Session = Depends(ge
     return templates.TemplateResponse(request, "novel_detail.html", {"request": request, "novel": novel})
 
 @router.post("/novels/{novel_id}/generate-bible")
-async def web_generate_bible(novel_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def web_generate_bible(novel_id: int, db: Session = Depends(get_db)):
     from app.services.task_service import TaskService
-    from app.database import SessionLocal
     
     task_service = TaskService(db)
+    # 只创建 pending 任务，由 TaskWorker 接管执行（P3）
     task = task_service.create_task(novel_id, "generate_bible", total_steps=8)
-    
-    # 使用 BackgroundTasks 后台执行（必须创建独立 session，避免请求结束后 session 被关闭）
-    def run_bible_task():
-        db_session = SessionLocal()
-        try:
-            from app.services.agent_runner import AgentRunner
-            runner = AgentRunner(db_session)
-            runner.run_generate_bible(task.id)
-        finally:
-            db_session.close()
-    
-    background_tasks.add_task(run_bible_task)
+    # 状态保持 pending，worker 会自动拉取执行
     
     return RedirectResponse(url=f"/novels/{novel_id}?task_id={task.id}", status_code=303)
 
 @router.post("/novels/{novel_id}/generate-next-chapter")
-async def web_generate_next_chapter(novel_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def web_generate_next_chapter(novel_id: int, db: Session = Depends(get_db)):
     from app.services.task_service import TaskService
-    from app.database import SessionLocal
     
     task_service = TaskService(db)
-    task = task_service.create_task(novel_id, "generate_chapter", total_steps=6)
-    
-    def run_chapter_task():
-        db_session = SessionLocal()
-        try:
-            from app.services.agent_runner import AgentRunner
-            runner = AgentRunner(db_session)
-            runner.run_generate_chapter(task.id)
-        finally:
-            db_session.close()
-    
-    background_tasks.add_task(run_chapter_task)
+    # 只创建 pending 任务，由 TaskWorker 接管执行
+    task = task_service.create_task(novel_id, "generate_chapter", total_steps=7)
     
     return RedirectResponse(url=f"/novels/{novel_id}?task_id={task.id}", status_code=303)
 
@@ -184,33 +162,12 @@ async def get_task_status(task_id: int, db: Session = Depends(get_db)):
 async def continuous_generate(
     novel_id: int,
     chapter_count: int = Form(...),
-    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     from app.services.task_service import TaskService
-    from app.database import SessionLocal
     
     task_service = TaskService(db)
-    task = task_service.create_task(novel_id, "continuous_generate", total_steps=chapter_count * 6)
-    
-    if background_tasks:
-        def run_continuous_bg():
-            db_session = SessionLocal()
-            try:
-                from app.services.agent_runner import AgentRunner
-                runner = AgentRunner(db_session)
-                runner.run_continuous_generate(task.id, novel_id, chapter_count)
-            finally:
-                db_session.close()
-        background_tasks.add_task(run_continuous_bg)
-    else:
-        # 兜底同步执行（不推荐）- 也使用独立 session
-        db_session = SessionLocal()
-        try:
-            from app.services.agent_runner import AgentRunner
-            runner = AgentRunner(db_session)
-            runner.run_continuous_generate(task.id, novel_id, chapter_count)
-        finally:
-            db_session.close()
+    # 创建 pending 任务，worker 稍后处理（continuous_generate 暂由 worker 特殊处理）
+    task = task_service.create_task(novel_id, "continuous_generate", total_steps=chapter_count * 7)
     
     return RedirectResponse(url=f"/novels/{novel_id}?task_id={task.id}", status_code=303)

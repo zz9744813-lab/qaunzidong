@@ -17,7 +17,140 @@ class ChapterService:
         self.memory = MemoryService(self.db)
         self.export = ExportService(self.db)
 
-    def generate_next_chapter(self, novel_id: int) -> Chapter:
+
+    # ==================== 独立步骤方法（供 AgentRunner 调用） ====================
+    
+    def generate_outline(self, novel_id: int, chapter_no: int = None) -> dict:
+        """步骤1: 生成章节细纲"""
+        from app.models import Novel, NovelBible, StoryMemory
+        
+        novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
+        if not novel:
+            raise ValueError("Novel not found")
+        
+        bible = self.db.query(NovelBible).filter(NovelBible.novel_id == novel_id).first()
+        if not bible:
+            from app.services.bible_service import BibleService
+            bible_service = BibleService(self.db)
+            bible = bible_service.generate_bible(novel_id)
+        
+        if chapter_no is None:
+            last_chapter = self.db.query(Chapter).filter(Chapter.novel_id == novel_id).order_by(Chapter.chapter_no.desc()).first()
+            chapter_no = (last_chapter.chapter_no + 1) if last_chapter else 1
+        
+        recent_memories = self.db.query(StoryMemory).filter(StoryMemory.novel_id == novel_id).order_by(StoryMemory.created_at.desc()).limit(5).all()
+        recent_summaries = "\n".join([m.content for m in recent_memories])
+        
+        important_memories = self.memory.get_important_memories(novel_id, limit=8)
+        important_summary = "\n".join([f"[{m.memory_type}] {m.content}" for m in important_memories])
+        
+        prompt = render_prompt("chapter_outline.md", {
+            "novel_bible": bible.full_text,
+            "recent_summaries": recent_summaries + "\n\n重要记忆:\n" + important_summary,
+            "chapter_no": chapter_no,
+            "style": novel.style,
+            "chapter_words": novel.chapter_words,
+        })
+        
+        trace = self.llm.generate_with_trace(prompt, provider="main")
+        
+        return {
+            "chapter_no": chapter_no,
+            "outline": trace.get("content", ""),
+            "prompt": trace.get("prompt", ""),
+            "raw_output": trace.get("raw_response", ""),
+            "model": trace.get("model", ""),
+            "elapsed": trace.get("elapsed_seconds", 0),
+            "error": trace.get("error")
+        }
+    
+    def generate_draft(self, novel_id: int, chapter_no: int, outline: str) -> dict:
+        """步骤2: 生成章节正文草稿"""
+        from app.models import Novel, NovelBible, StoryMemory
+        
+        novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
+        bible = self.db.query(NovelBible).filter(NovelBible.novel_id == novel_id).first()
+        
+        recent_memories = self.db.query(StoryMemory).filter(StoryMemory.novel_id == novel_id).order_by(StoryMemory.created_at.desc()).limit(5).all()
+        recent_summaries = "\n".join([m.content for m in recent_memories])
+        
+        important_memories = self.memory.get_important_memories(novel_id, limit=8)
+        important_summary = "\n".join([f"[{m.memory_type}] {m.content}" for m in important_memories])
+        
+        prompt = render_prompt("chapter_write.md", {
+            "novel_bible": bible.full_text if bible else "",
+            "recent_summaries": recent_summaries + "\n\n重要记忆:\n" + important_summary,
+            "chapter_outline": outline,
+            "style": novel.style,
+            "chapter_words": novel.chapter_words,
+        })
+        
+        trace = self.llm.generate_with_trace(prompt, provider="main")
+        
+        return {
+            "draft_text": trace.get("content", ""),
+            "prompt": trace.get("prompt", ""),
+            "raw_output": trace.get("raw_response", ""),
+            "model": trace.get("model", ""),
+            "elapsed": trace.get("elapsed_seconds", 0),
+            "error": trace.get("error")
+        }
+
+
+    def review_draft(self, chapter_id: int, text: str = None) -> dict:
+        """步骤3: 质检评分"""
+        if text is None:
+            chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
+            text = chapter.draft_text or chapter.final_text or ""
+        
+        review_result = self.quality.review_chapter(chapter_id, text=text)
+        
+        return {
+            "review": review_result,
+            "score": review_result.get("score", 0),
+            "suggestion": review_result.get("suggestion", ""),
+            "parsed_output": str(review_result)
+        }
+    
+    def rewrite_if_needed(self, chapter_id: int, review: dict) -> dict:
+        """步骤4: 根据质检结果重写"""
+        new_text = self.quality.rewrite_chapter(chapter_id, review)
+        
+        return {
+            "rewritten_text": new_text,
+            "parsed_output": new_text[:1500]
+        }
+    
+    def polish_text(self, chapter_id: int) -> dict:
+        """步骤5: 润色正文"""
+        if not settings.writing.get("auto_polish"):
+            return {"polished_text": "", "skipped": True}
+        
+        polished = self.quality.polish_chapter(chapter_id)
+        
+        return {
+            "polished_text": polished,
+            "parsed_output": polished[:1500]
+        }
+    
+    def extract_memory(self, chapter_id: int) -> dict:
+        """步骤6: 提取记忆"""
+        self.memory.extract_memory(chapter_id)
+        return {
+            "parsed_output": "记忆提取完成",
+            "skipped": False
+        }
+    
+    def export_chapter(self, chapter_id: int) -> dict:
+        """步骤7: 导出章节"""
+        path = self.export.export_chapter(chapter_id)
+        return {
+            "export_path": path,
+            "parsed_output": f"已导出到 {path}" if path else "导出失败"
+        }
+
+
+        def generate_next_chapter(self, novel_id: int) -> Chapter:
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
             raise ValueError("Novel not found")

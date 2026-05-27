@@ -13,6 +13,7 @@ from app.routes.prompt_routes import router as prompt_router
 from app.routes.system_settings_routes import router as system_router
 from app.database import engine, Base
 from app.services.scheduler_service import start_scheduler
+from app.services.worker_service import worker as task_worker
 
 app = FastAPI(
     title="小说自动工厂 API",
@@ -44,7 +45,9 @@ async def startup_event():
     Base.metadata.create_all(bind=engine)
     # Start scheduler
     start_scheduler()
-    print("小说自动工厂已启动！")
+    # Start real task worker (P3)
+    task_worker.start()
+    print("小说自动工厂已启动！ (TaskWorker 已启动)")
 
 # Root redirect to novels backend
 @app.get("/")

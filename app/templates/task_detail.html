@@ -1,75 +1,299 @@
 {% extends "base.html" %}
 
-{% block title %}任务详情 #{{ task.id }}{% endblock %}
-{% block page_title %}任务 #{{ task.id }}{% endblock %}
+{% block title %}Agent 工作台 - 任务 #{{ task.id }}{% endblock %}
+{% block page_title %}Agent 工作台{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h3>任务详情</h3>
-        <span class="badge 
-            {% if task.status == 'success' %}badge-success
-            {% elif task.status == 'failed' %}badge-failed
-            {% elif task.status == 'running' %}badge-running
-            {% else %}badge-draft{% endif %}">
-            {{ task.status }}
-        </span>
-    </div>
-    <div class="card-body">
-        <p><strong>任务类型：</strong> {{ task.task_type }}</p>
-        <p><strong>当前步骤：</strong> {{ task.current_step or '-' }}</p>
-        <p><strong>进度：</strong> {{ task.progress }}% ({{ task.finished_steps }}/{{ task.total_steps }})</p>
-        
-        {% if task.error_message %}
-        <div style="background:#3f1f1f; padding:12px; border-radius:6px; margin:16px 0;">
-            <strong style="color:#f87171;">错误信息：</strong><br>
-            <span style="color:#fecaca;">{{ task.error_message }}</span>
+<style>
+.agent-console {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    gap: 16px;
+    height: calc(100vh - 180px);
+    min-height: 600px;
+}
+.step-list {
+    background: #1e2937;
+    border-radius: 8px;
+    padding: 12px;
+    overflow-y: auto;
+}
+.step-item {
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #334155;
+}
+.step-item:hover { background: #334155; }
+.step-item.active { background: #3b82f6; border-color: #60a5fa; }
+.step-item .step-name { font-weight: 600; font-size: 14px; }
+.step-item .step-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+.step-item.failed { border-color: #ef4444; }
+.step-item.success { border-color: #22c55e; }
+
+.detail-panel {
+    background: #1e2937;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-y: auto;
+}
+.detail-panel h4 { margin: 0 0 16px; color: #e2e8f0; }
+.detail-row { margin-bottom: 14px; }
+.detail-row label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+.detail-row .value { background: #0f172a; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+
+.log-panel {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    overflow-y: auto;
+    color: #94a3b8;
+}
+.log-line { margin-bottom: 4px; }
+.log-line.error { color: #f87171; }
+.log-line.success { color: #4ade80; }
+
+.expand-btn {
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 6px;
+}
+.expand-btn:hover { background: #475569; }
+</style>
+
+<div class="agent-console">
+    <!-- 左侧：步骤列表 -->
+    <div class="step-list">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:15px;">执行步骤</h3>
+            <span id="step-count" style="font-size:12px; color:#64748b;"></span>
         </div>
-        {% endif %}
+        
+        <div id="step-list-container">
+            {% for step in task.steps %}
+            <div class="step-item {% if step.status == 'failed' %}failed{% elif step.status == 'success' %}success{% endif %}" 
+                 data-step-id="{{ step.id }}" onclick="showStepDetail({{ step.id }})">
+                <div class="step-name">{{ step.step_name }}</div>
+                <div class="step-meta">
+                    {{ step.provider_role or 'main' }} · 
+                    <span class="badge {% if step.status == 'success' %}badge-success{% elif step.status == 'failed' %}badge-failed{% elif step.status == 'running' %}badge-running{% else %}badge-draft{% endif %}">
+                        {{ step.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 中间：步骤详情 -->
+    <div class="detail-panel" id="detail-panel">
+        <div style="text-align:center; color:#64748b; padding-top:80px;">
+            <p>← 点击左侧步骤查看详情</p>
+        </div>
+    </div>
+
+    <!-- 右侧：实时日志 -->
+    <div>
+        <div class="log-panel" id="log-panel" style="height: 420px;">
+            <div style="color:#64748b; margin-bottom:8px;">实时日志</div>
+            <div id="log-content"></div>
+        </div>
+        
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+            <button onclick="cancelTask()" class="btn btn-danger" style="width:100%">取消任务</button>
+            <button onclick="retryTask()" class="btn btn-secondary" style="width:100%">重试整个任务</button>
+            <button onclick="refreshTask()" class="btn btn-secondary" style="width:100%">手动刷新</button>
+            <a href="/novels/{{ task.novel_id }}" class="btn btn-secondary" style="width:100%; text-align:center;">返回小说</a>
+        </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3>执行步骤</h3>
-    </div>
-    <div class="card-body">
-        {% if task.steps %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>步骤</th>
-                    <th>角色</th>
-                    <th>状态</th>
-                    <th>开始时间</th>
-                    <th>结束时间</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for step in task.steps %}
-                <tr>
-                    <td>{{ step.step_name }}</td>
-                    <td>{{ step.provider_role or '-' }}</td>
-                    <td>
-                        <span class="badge 
-                            {% if step.status == 'success' %}badge-success
-                            {% elif step.status == 'failed' %}badge-failed
-                            {% elif step.status == 'running' %}badge-running
-                            {% else %}badge-draft{% endif %}">
-                            {{ step.status }}
+<script>
+let currentTaskId = {{ task.id }};
+let currentStepId = null;
+let pollInterval = null;
+
+function showStepDetail(stepId) {
+    // 高亮选中
+    document.querySelectorAll('.step-item').forEach(el => el.classList.remove('active'));
+    const item = document.querySelector(`[data-step-id="${stepId}"]`);
+    if (item) item.classList.add('active');
+    
+    currentStepId = stepId;
+    
+    // 从 API 获取最新数据
+    fetch(`/api/tasks/${currentTaskId}`)
+        .then(r => r.json())
+        .then(data => {
+            const step = data.steps.find(s => s.id === stepId);
+            if (!step) return;
+            
+            const html = `
+                <h4>${step.step_name}</h4>
+                
+                <div class="detail-row">
+                    <label>状态</label>
+                    <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : 'badge-running'}">${step.status}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <label>角色 / 模型</label>
+                    <div class="value">${step.provider_role || '-'} / ${step.model_name || '-'}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <label>开始 / 结束 / 耗时</label>
+                    <div class="value">${step.started_at || '-'} → ${step.finished_at || '-'} 
+                    ${step.started_at && step.finished_at ? '(' + ((new Date(step.finished_at) - new Date(step.started_at))/1000).toFixed(1) + 's)' : ''}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <label>输入 Prompt <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
+                    <div class="value" style="max-height:120px; overflow:hidden;">${step.input_prompt || '无'}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <label>模型原始输出 <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
+                    <div class="value" style="max-height:120px; overflow:hidden;">${step.raw_output || '无'}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <label>解析结果 <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
+                    <div class="value" style="max-height:120px; overflow:hidden;">${step.parsed_output || '无'}</div>
+                </div>
+                
+                ${step.error_message ? `
+                <div class="detail-row">
+                    <label style="color:#f87171">错误信息</label>
+                    <div class="value" style="color:#fecaca; background:#3f1f1f;">${step.error_message}</div>
+                </div>` : ''}
+            `;
+            
+            document.getElementById('detail-panel').innerHTML = html;
+        });
+}
+
+function toggleExpand(btn) {
+    const valueDiv = btn.parentElement.nextElementSibling;
+    if (valueDiv.style.maxHeight === '120px' || !valueDiv.style.maxHeight) {
+        valueDiv.style.maxHeight = 'none';
+        btn.textContent = '收起';
+    } else {
+        valueDiv.style.maxHeight = '120px';
+        btn.textContent = '展开';
+    }
+}
+
+function refreshTask() {
+    fetch(`/api/tasks/${currentTaskId}`)
+        .then(r => r.json())
+        .then(data => {
+            // 重新渲染步骤列表
+            const container = document.getElementById('step-list-container');
+            container.innerHTML = '';
+            
+            data.steps.forEach(step => {
+                const div = document.createElement('div');
+                div.className = `step-item ${step.status === 'failed' ? 'failed' : step.status === 'success' ? 'success' : ''}`;
+                div.dataset.stepId = step.id;
+                div.onclick = () => showStepDetail(step.id);
+                div.innerHTML = `
+                    <div class="step-name">${step.step_name}</div>
+                    <div class="step-meta">
+                        ${step.provider_role || 'main'} · 
+                        <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}">
+                            ${step.status}
                         </span>
-                    </td>
-                    <td>{{ step.started_at.strftime('%H:%M:%S') if step.started_at else '-' }}</td>
-                    <td>{{ step.finished_at.strftime('%H:%M:%S') if step.finished_at else '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color:#64748b;">暂无步骤记录</p>
-        {% endif %}
-    </div>
-</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            document.getElementById('step-count').textContent = `${data.steps.length} 步`;
+            
+            // 如果当前有选中步骤，刷新详情
+            if (currentStepId) {
+                showStepDetail(currentStepId);
+            }
+            
+            // 添加日志
+            addLog(`任务状态: ${data.status} | 进度 ${data.progress}%`);
+        });
+}
 
-<a href="/novels/{{ task.novel_id }}" class="btn btn-secondary">返回小说</a>
+function addLog(msg, type = 'info') {
+    const logContent = document.getElementById('log-content');
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logContent.appendChild(line);
+    logContent.scrollTop = logContent.scrollHeight;
+}
+
+function pollTask() {
+    if (pollInterval) clearInterval(pollInterval);
+    
+    pollInterval = setInterval(() => {
+        fetch(`/api/tasks/${currentTaskId}`)
+            .then(r => r.json())
+            .then(data => {
+                // 简单更新步骤状态
+                document.querySelectorAll('.step-item').forEach(item => {
+                    const stepId = parseInt(item.dataset.stepId);
+                    const step = data.steps.find(s => s.id === stepId);
+                    if (step) {
+                        const badge = item.querySelector('.badge');
+                        if (badge) {
+                            badge.className = `badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}`;
+                            badge.textContent = step.status;
+                        }
+                    }
+                });
+            });
+    }, 2500);
+}
+
+function cancelTask() {
+    if (!confirm('确定取消此任务？')) return;
+    fetch(`/api/tasks/${currentTaskId}/cancel`, { method: 'POST' })
+        .then(() => {
+            addLog('任务已取消', 'error');
+            refreshTask();
+        });
+}
+
+function retryTask() {
+    if (!confirm('确定重试整个任务？')) return;
+    fetch(`/api/tasks/${currentTaskId}/retry`, { method: 'POST' })
+        .then(() => {
+            addLog('任务已重置为 pending，等待 Worker 执行');
+            setTimeout(refreshTask, 1000);
+        });
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('step-count').textContent = `{{ task.steps|length }} 步`;
+    
+    // 默认选中第一个步骤
+    const firstStep = document.querySelector('.step-item');
+    if (firstStep) {
+        firstStep.click();
+    }
+    
+    // 启动轮询
+    pollTask();
+    
+    addLog('Agent 工作台已加载');
+});
+</script>
 {% endblock %}
