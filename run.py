@@ -13,10 +13,10 @@ def main():
 
     print("=" * 50)
     print("Novel Auto Factory started!")
-    print("Access the web interface at: http://127.0.0.1:8000")
+    print("Access the web interface at: http://0.0.0.0:8001")
     print("=" * 50)
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8001, reload=False)
 
 if __name__ == "__main__":
     main()
