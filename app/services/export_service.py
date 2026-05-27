@@ -1,11 +1,14 @@
 import os
 from app.database import SessionLocal
 from app.models import Chapter, Novel
+from app.config import settings
 
 class ExportService:
     def __init__(self, db=None):
         self.db = db or SessionLocal()
-        self.export_dir = "data/exports"
+        export_cfg = getattr(settings, "export", {})
+        self.export_dir = export_cfg.get("export_dir", "data/exports")
+        os.makedirs(self.export_dir, exist_ok=True)
 
     def export_chapter(self, chapter_id: int):
         chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
