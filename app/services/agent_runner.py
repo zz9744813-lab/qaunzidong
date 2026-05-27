@@ -63,19 +63,18 @@ class AgentRunner:
             step = self.task_service.add_step(task_id, task.novel_id, step_name, i, "main")
             self.task_service.update_step(step.id, "running")
             
+            # 先构建 prompt（无论成功失败都要记录）
+            base_prompt = render_prompt("novel_bible.md", {
+                "title": novel.title,
+                "genre": novel.genre,
+                "style": novel.style,
+                "description": novel.description or "",
+                "target_words": novel.target_words,
+                "chapter_words": novel.chapter_words,
+            })
+            full_prompt = f"{base_prompt}\n\n【本步骤要求】\n{instruction}\n\n请严格按照本步骤要求输出，不要输出其他部分。"
+            
             try:
-                # 构建带指令的 prompt
-                base_prompt = render_prompt("novel_bible.md", {
-                    "title": novel.title,
-                    "genre": novel.genre,
-                    "style": novel.style,
-                    "description": novel.description or "",
-                    "target_words": novel.target_words,
-                    "chapter_words": novel.chapter_words,
-                })
-                
-                full_prompt = f"{base_prompt}\n\n【本步骤要求】\n{instruction}\n\n请严格按照本步骤要求输出，不要输出其他部分。"
-                
                 trace = self.llm.generate_with_trace(full_prompt, provider="main")
                 
                 content = trace.get("content", "")
@@ -93,7 +92,13 @@ class AgentRunner:
             except Exception as e:
                 import traceback
                 error_detail = f"{str(e)}\n{traceback.format_exc()}"
-                self.task_service.update_step(step.id, "failed", error_message=error_detail)
+                # 失败时也要把 prompt 写进去
+                self.task_service.update_step(
+                    step.id, "failed",
+                    input_prompt=full_prompt,
+                    error_message=error_detail,
+                    provider_role="main"
+                )
                 self.task_service.update_task_status(task_id, "failed", current_step=step_name)
                 return
             

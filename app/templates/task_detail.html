@@ -142,7 +142,7 @@ function showStepDetail(stepId) {
                 
                 <div class="detail-row">
                     <label>状态</label>
-                    <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : 'badge-running'}">${step.status}</span>
+                    <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}">${step.status}</span>
                 </div>
                 
                 <div class="detail-row">

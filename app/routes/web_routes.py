@@ -150,12 +150,56 @@ async def get_task_status(task_id: int, db: Session = Depends(get_db)):
                 "step_name": s.step_name,
                 "status": s.status,
                 "provider_role": s.provider_role,
+                "model_name": s.model_name,
+                "input_prompt": s.input_prompt,
+                "raw_output": s.raw_output,
+                "parsed_output": s.parsed_output,
+                "error_message": s.error_message,
                 "started_at": s.started_at.isoformat() if s.started_at else None,
                 "finished_at": s.finished_at.isoformat() if s.finished_at else None,
             }
             for s in task.steps
         ]
     }
+
+
+
+
+@router.post("/api/tasks/{task_id}/cancel")
+async def cancel_task(task_id: int, db: Session = Depends(get_db)):
+    from app.services.task_service import TaskService
+    task_service = TaskService(db)
+    task = task_service.get_task_with_steps(task_id)
+    if not task:
+        raise HTTPException(status_code=404)
+    
+    if task.status in ["pending", "running"]:
+        task.status = "cancelled"
+        task.finished_at = datetime.utcnow()
+        db.commit()
+    return {"status": "cancelled"}
+
+
+@router.post("/api/tasks/{task_id}/retry")
+async def retry_task(task_id: int, db: Session = Depends(get_db)):
+    from app.services.task_service import TaskService
+    task_service = TaskService(db)
+    task = task_service.get_task_with_steps(task_id)
+    if not task:
+        raise HTTPException(status_code=404)
+    
+    if task.status in ["failed", "cancelled"]:
+        task.status = "pending"
+        task.error_message = None
+        task.finished_at = None
+        # 重置所有步骤
+        for step in task.steps:
+            step.status = "pending"
+            step.started_at = None
+            step.finished_at = None
+            step.error_message = None
+        db.commit()
+    return {"status": "pending"}
 
 
 @router.post("/novels/{novel_id}/continuous-generate")

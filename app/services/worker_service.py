@@ -67,11 +67,9 @@ class TaskWorker:
                     elif task.task_type == "generate_chapter":
                         runner.run_generate_chapter(task.id)
                     elif task.task_type == "continuous_generate":
-                        # continuous_generate 需要额外参数，暂时跳过或从任务元数据读取
-                        logger.warning(f"continuous_generate 暂未在 worker 中实现 task_id={task.id}")
-                        task.status = "failed"
-                        task.error_message = "continuous_generate 暂不支持 worker 执行"
-                        db.commit()
+                        # 从任务元数据或默认值获取 chapter_count
+                        chapter_count = 3  # 默认值，可后续扩展
+                        runner.run_continuous_generate(task.id, task.novel_id, chapter_count)
                     else:
                         logger.warning(f"未知任务类型: {task.task_type}")
                         task.status = "failed"

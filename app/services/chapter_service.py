@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 class ChapterService:
     def __init__(self, db=None):
         self.db = db or SessionLocal()
-        self.llm = LLMService()
+        self.llm = LLMService(self.db)
         self.quality = QualityService(self.db)
         self.memory = MemoryService(self.db)
         self.export = ExportService(self.db)

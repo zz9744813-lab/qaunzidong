@@ -58,7 +58,8 @@ class TaskService:
         return step
 
     def update_step(self, step_id: int, status: str, input_prompt: str = None, 
-                    raw_output: str = None, parsed_output: str = None, error_message: str = None):
+                    raw_output: str = None, parsed_output: str = None, error_message: str = None,
+                    provider_role: str = None, model_name: str = None):
         step = self.db.query(GenerationStep).filter(GenerationStep.id == step_id).first()
         if not step:
             return None
@@ -72,6 +73,10 @@ class TaskService:
             step.parsed_output = parsed_output
         if error_message:
             step.error_message = error_message
+        if provider_role:
+            step.provider_role = provider_role
+        if model_name:
+            step.model_name = model_name
         
         if status == "running":
             step.started_at = datetime.utcnow()
