@@ -40,7 +40,14 @@
                         {% endif %}
                     </td>
                     <td style="max-width:400px; word-break:break-all; font-size:13px;">
-                        {{ log.message or '-' }}
+                        {% if log.message and log.message|length > 80 %}
+                            <details>
+                                <summary>查看消息</summary>
+                                <pre style="white-space:pre-wrap; margin-top:8px; font-size:12px;">{{ log.message }}</pre>
+                            </details>
+                        {% else %}
+                            {{ log.message or '-' }}
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

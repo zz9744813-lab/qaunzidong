@@ -26,7 +26,7 @@
                 </p>
             </div>
             <div>
-                <p><strong>当前章节：</strong> {{ novel.current_chapter or 0 }}</p>
+                <p><strong>当前章节：</strong> {{ novel.current_chapter_no or 0 }}</p>
                 <p><strong>失败次数：</strong> {{ novel.failed_times or 0 }}</p>
                 <p><strong>创建时间：</strong> {{ novel.created_at.strftime('%Y-%m-%d %H:%M') if novel.created_at else '-' }}</p>
             </div>
@@ -65,7 +65,16 @@
 <!-- 小说设定区 -->
 <div class="card">
     <div class="card-header">
-        <h3>小说设定 (Bible)</h3>
+    <div class="card-body">
+        {% if novel.bibles %}
+            <div style="background:#f8fafc; padding:20px; border-radius:8px; max-height:300px; overflow:auto; white-space:pre-wrap; font-size:14px; line-height:1.7;">
+                {{ novel.bibles[0].full_text[:2000] }}{% if novel.bibles[0].full_text|length > 2000 %}...{% endif %}
+            </div>
+        {% else %}
+            <div style="color:#64748b; padding:20px 0;">
+                尚未生成设定
+            </div>
+        {% endif %}
     </div>
     <div class="card-body">
         {% if novel.bible %}

@@ -8,19 +8,23 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="label">小说总数</div>
-        <div class="value">{{ novels|length if novels else 0 }}</div>
+        <div class="value">{{ stats.total_novels if stats else (novels|length if novels else 0) }}</div>
     </div>
     <div class="stat-card">
         <div class="label">运行中</div>
-        <div class="value">{{ novels|selectattr('status', 'equalto', 'running')|list|length if novels else 0 }}</div>
+        <div class="value">{{ stats.running_novels if stats else (novels|selectattr('status', 'equalto', 'running')|list|length if novels else 0) }}</div>
     </div>
     <div class="stat-card">
         <div class="label">累计章节</div>
-        <div class="value">-</div>
+        <div class="value">{{ stats.total_chapters if stats else '-' }}</div>
     </div>
     <div class="stat-card">
-        <div class="label">失败任务</div>
-        <div class="value">0</div>
+        <div class="label">累计字数</div>
+        <div class="value">{{ stats.total_words if stats else '-' }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">失败任务数</div>
+        <div class="value">{{ stats.failed_tasks if stats else 0 }}</div>
     </div>
 </div>
 
@@ -59,7 +63,7 @@
                             <span class="badge badge-draft">草稿</span>
                         {% endif %}
                     </td>
-                    <td>{{ novel.current_chapter or 0 }}</td>
+                    <td>{{ novel.current_chapter_no or 0 }}</td>
                     <td>{{ novel.created_at.strftime('%Y-%m-%d %H:%M') if novel.created_at else '-' }}</td>
                     <td>
                         <a href="/novels/{{ novel.id }}" class="btn btn-secondary btn-sm">详情</a>

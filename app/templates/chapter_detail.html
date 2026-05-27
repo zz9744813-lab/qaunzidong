@@ -20,6 +20,15 @@
 
 <div class="card">
     <div class="card-header">
+        <h3>细纲 (Outline)</h3>
+    </div>
+    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
+        {{ chapter.outline or '暂无细纲' }}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
         <h3>正文内容</h3>
     </div>
     <div class="card-body" style="max-width: 860px; margin: 0 auto; line-height: 1.85; font-size: 16px; padding: 40px 30px; background: #fff; border-radius: 8px;">
@@ -30,6 +39,24 @@
         {% else %}
             <p style="color:#64748b">暂无正文内容</p>
         {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>质检结果 (Review)</h3>
+    </div>
+    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
+        {{ chapter.review_result or '暂无质检结果' }}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>章节摘要 (Summary)</h3>
+    </div>
+    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
+        {{ chapter.summary or '暂无摘要' }}
     </div>
 </div>
 
