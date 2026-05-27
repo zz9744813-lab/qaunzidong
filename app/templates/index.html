@@ -1,41 +1,88 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Novel Auto Factory</title>
-    <style>
-        body { font-family: Arial; margin: 40px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f2f2f2; }
-        .btn { padding: 5px 10px; background: #4CAF50; color: white; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <h1>Novel Auto Factory</h1>
-    <a href="/novels/new" class="btn">创建新小说</a>
-    <a href="/logs" class="btn">查看日志</a>
-    <h2>小说列表</h2>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>标题</th>
-            <th>类型</th>
-            <th>状态</th>
-            <th>当前章节</th>
-            <th>操作</th>
-        </tr>
-        {% for novel in novels %}
-        <tr>
-            <td>{{ novel.id }}</td>
-            <td>{{ novel.title }}</td>
-            <td>{{ novel.genre }}</td>
-            <td>{{ novel.status }}</td>
-            <td>{{ novel.current_chapter_no }}</td>
-            <td>
-                <a href="/novels/{{ novel.id }}">详情</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}小说项目 - 小说自动工厂{% endblock %}
+{% block page_title %}小说项目{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">小说总数</div>
+        <div class="value">{{ novels|length if novels else 0 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">运行中</div>
+        <div class="value">{{ novels|selectattr('status', 'equalto', 'running')|list|length if novels else 0 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">累计章节</div>
+        <div class="value">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">失败任务</div>
+        <div class="value">0</div>
+    </div>
+</div>
+
+<!-- 小说列表 -->
+<div class="card">
+    <div class="card-header">
+        <h3>我的小说</h3>
+        <a href="/novels/new" class="btn btn-primary btn-sm">+ 创建新小说</a>
+    </div>
+    <div class="card-body">
+        {% if novels %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>标题</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>当前章节</th>
+                    <th>创建时间</th>
+                    <th width="220">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for novel in novels %}
+                <tr>
+                    <td><strong>{{ novel.title }}</strong></td>
+                    <td>{{ novel.genre or '-' }}</td>
+                    <td>
+                        {% if novel.status == 'running' %}
+                            <span class="badge badge-running">运行中</span>
+                        {% elif novel.status == 'paused' %}
+                            <span class="badge badge-paused">已暂停</span>
+                        {% elif novel.status == 'failed' %}
+                            <span class="badge badge-failed">异常</span>
+                        {% else %}
+                            <span class="badge badge-draft">草稿</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ novel.current_chapter or 0 }}</td>
+                    <td>{{ novel.created_at.strftime('%Y-%m-%d %H:%M') if novel.created_at else '-' }}</td>
+                    <td>
+                        <a href="/novels/{{ novel.id }}" class="btn btn-secondary btn-sm">详情</a>
+                        <form action="/novels/{{ novel.id }}/start" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-success btn-sm">启动</button>
+                        </form>
+                        <form action="/novels/{{ novel.id }}/pause" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-secondary btn-sm">暂停</button>
+                        </form>
+                        <form action="/novels/{{ novel.id }}/export-full" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-primary btn-sm" data-confirm="确定导出整本小说？">导出</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center; padding:40px 0; color:#64748b;">
+            <p>还没有小说</p>
+            <a href="/novels/new" class="btn btn-primary" style="margin-top:16px">立即创建第一本小说</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

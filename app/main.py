@@ -7,10 +7,18 @@ from app.database import engine, Base
 from app.services.scheduler_service import start_scheduler
 import os
 
-app = FastAPI(title="Novel Auto Factory")
+app = FastAPI(
+    title="小说自动工厂 API",
+    description="自动生成小说设定、章节、质检、润色、记忆和导出的 API 文档",
+    version="0.2.0",
+    docs_url="/api-docs",
+    redoc_url="/redoc"
+)
 
 # Ensure static directory exists
 os.makedirs("app/static", exist_ok=True)
+os.makedirs("app/static/css", exist_ok=True)
+os.makedirs("app/static/js", exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -18,8 +26,8 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Templates
 templates = Jinja2Templates(directory="app/templates")
 
-# Include routers
-app.include_router(web_router)
+# Include routers (web routes hidden from Swagger)
+app.include_router(web_router, include_in_schema=False)
 app.include_router(api_router, prefix="/api")
 
 # Startup event
@@ -29,9 +37,9 @@ async def startup_event():
     Base.metadata.create_all(bind=engine)
     # Start scheduler
     start_scheduler()
-    print("Novel Auto Factory started successfully!")
+    print("小说自动工厂已启动！")
 
-# Root redirect
+# Root redirect to novels backend
 @app.get("/")
 async def root():
     from fastapi.responses import RedirectResponse

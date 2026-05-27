@@ -1,17 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>创建新小说 - Novel Auto Factory</title>
-</head>
-<body>
-    <h1>创建新小说</h1>
-    <form method="post" action="/novels/new">
-        <p>标题: <input type="text" name="title" required></p>
-        <p>类型: <input type="text" name="genre" required></p>
-        <p>文风: <textarea name="style" required></textarea></p>
-        <p>补充说明: <textarea name="description"></textarea></p>
-        <button type="submit">创建</button>
-    </form>
-    <a href="/novels">返回列表</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}创建小说 - 小说自动工厂{% endblock %}
+{% block page_title %}创建新小说{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 720px; margin: 0 auto;">
+    <div class="card-header">
+        <h3>新建小说项目</h3>
+    </div>
+    <div class="card-body">
+        <form action="/novels/new" method="post">
+            <div class="form-group">
+                <label for="title">小说标题 <span style="color:#ef4444">*</span></label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="例如：暗影斗罗" required>
+            </div>
+
+            <div class="form-group">
+                <label for="genre">题材类型 <span style="color:#ef4444">*</span></label>
+                <input type="text" id="genre" name="genre" class="form-control" placeholder="玄幻 / 都市 / 科幻 / 仙侠" required>
+            </div>
+
+            <div class="form-group">
+                <label for="style">写作风格 <span style="color:#ef4444">*</span></label>
+                <input type="text" id="style" name="style" class="form-control" placeholder="热血 / 智斗 / 情感 / 幽默" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">小说简介</label>
+                <textarea id="description" name="description" class="form-control" placeholder="简单描述小说背景和主线..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 16px; margin-top: 32px;">
+                <button type="submit" class="btn btn-primary" style="flex:1">创建小说</button>
+                <a href="/novels" class="btn btn-secondary" style="flex:1">返回列表</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

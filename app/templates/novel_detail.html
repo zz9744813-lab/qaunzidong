@@ -1,57 +1,131 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ novel.title }} - Novel Auto Factory</title>
-</head>
-<body>
-    <h1>{{ novel.title }}</h1>
-    <p>类型: {{ novel.genre }}</p>
-    <p>状态: {{ novel.status }}</p>
-    <p>当前章节: {{ novel.current_chapter_no }}</p>
-    
-    <h2>操作</h2>
-    
-    <form method="post" action="/novels/{{ novel.id }}/generate-bible" style="display:inline;">
-        <button type="submit">生成设定</button>
-    </form>
-    
-    <form method="post" action="/novels/{{ novel.id }}/generate-next-chapter" style="display:inline;">
-        <button type="submit">生成下一章</button>
-    </form>
-    
-    <form method="post" action="/novels/{{ novel.id }}/start" style="display:inline;">
-        <button type="submit">启动自动运行</button>
-    </form>
-    
-    <form method="post" action="/novels/{{ novel.id }}/pause" style="display:inline;">
-        <button type="submit">暂停自动运行</button>
-    </form>
-    
-    <form method="post" action="/novels/{{ novel.id }}/export-full" style="display:inline;">
-        <button type="submit">导出整本小说</button>
-    </form>
-    
-    <h2>小说设定</h2>
-    {% if novel.bibles %}
-    <pre>{{ novel.bibles[0].full_text[:500] }}...</pre>
-    {% else %}
-    <p>尚未生成设定</p>
-    {% endif %}
-    
-    <h2>章节列表</h2>
-    {% if novel.chapters %}
-    <ul>
-    {% for ch in novel.chapters %}
-        <li>
-            <a href="/chapters/{{ ch.id }}">第 {{ ch.chapter_no }} 章 - {{ ch.title or "未命名" }}</a>
-            (字数: {{ ch.word_count }}, 质量: {{ ch.quality_score }})
-        </li>
-    {% endfor %}
-    </ul>
-    {% else %}
-    <p>尚未生成章节</p>
-    {% endif %}
-    
-    <a href="/novels">返回列表</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}{{ novel.title }} - 小说自动工厂{% endblock %}
+{% block page_title %}{{ novel.title }}{% endblock %}
+
+{% block content %}
+<!-- 小说信息卡 -->
+<div class="card">
+    <div class="card-header">
+        <h3>小说信息</h3>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div>
+                <p><strong>标题：</strong> {{ novel.title }}</p>
+                <p><strong>类型：</strong> {{ novel.genre or '-' }}</p>
+                <p><strong>风格：</strong> {{ novel.style or '-' }}</p>
+                <p><strong>状态：</strong> 
+                    {% if novel.status == 'running' %}
+                        <span class="badge badge-running">运行中</span>
+                    {% elif novel.status == 'paused' %}
+                        <span class="badge badge-paused">已暂停</span>
+                    {% else %}
+                        <span class="badge badge-draft">草稿</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p><strong>当前章节：</strong> {{ novel.current_chapter or 0 }}</p>
+                <p><strong>失败次数：</strong> {{ novel.failed_times or 0 }}</p>
+                <p><strong>创建时间：</strong> {{ novel.created_at.strftime('%Y-%m-%d %H:%M') if novel.created_at else '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作按钮区 -->
+<div class="card">
+    <div class="card-header">
+        <h3>操作</h3>
+    </div>
+    <div class="card-body" style="display: flex; flex-wrap: wrap; gap: 12px;">
+        <form action="/novels/{{ novel.id }}/generate-bible" method="post" style="display:inline">
+            <button type="submit" class="btn btn-primary btn-generate">生成设定</button>
+        </form>
+        
+        <form action="/novels/{{ novel.id }}/generate-next-chapter" method="post" style="display:inline">
+            <button type="submit" class="btn btn-success btn-generate">生成下一章</button>
+        </form>
+        
+        <form action="/novels/{{ novel.id }}/start" method="post" style="display:inline">
+            <button type="submit" class="btn btn-success">启动自动运行</button>
+        </form>
+        
+        <form action="/novels/{{ novel.id }}/pause" method="post" style="display:inline">
+            <button type="submit" class="btn btn-secondary" data-confirm="确定暂停自动运行？">暂停自动运行</button>
+        </form>
+        
+        <form action="/novels/{{ novel.id }}/export-full" method="post" style="display:inline">
+            <button type="submit" class="btn btn-primary" data-confirm="确定导出整本小说？">导出整本小说</button>
+        </form>
+    </div>
+</div>
+
+<!-- 小说设定区 -->
+<div class="card">
+    <div class="card-header">
+        <h3>小说设定 (Bible)</h3>
+    </div>
+    <div class="card-body">
+        {% if novel.bible %}
+            <div style="background:#f8fafc; padding:20px; border-radius:8px; max-height:300px; overflow:auto; white-space:pre-wrap; font-size:14px; line-height:1.7;">
+                {{ novel.bible.full_text[:2000] }}{% if novel.bible.full_text|length > 2000 %}...{% endif %}
+            </div>
+        {% else %}
+            <div style="color:#64748b; padding:20px 0;">
+                尚未生成设定，请点击上方「生成设定」按钮。
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 章节列表 -->
+<div class="card">
+    <div class="card-header">
+        <h3>章节列表</h3>
+    </div>
+    <div class="card-body">
+        {% if novel.chapters %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th width="60">章节</th>
+                    <th>标题</th>
+                    <th width="80">状态</th>
+                    <th width="80">字数</th>
+                    <th width="80">质量分</th>
+                    <th width="100">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ch in novel.chapters|sort(attribute='chapter_no') %}
+                <tr>
+                    <td>第{{ ch.chapter_no }}章</td>
+                    <td>{{ ch.title or '未命名' }}</td>
+                    <td>
+                        {% if ch.status == 'final' %}
+                            <span class="badge badge-success">已完成</span>
+                        {% elif ch.status == 'polished' %}
+                            <span class="badge badge-running">已润色</span>
+                        {% elif ch.status == 'draft_done' %}
+                            <span class="badge badge-draft">初稿完成</span>
+                        {% else %}
+                            <span class="badge badge-draft">等待中</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ch.word_count or '-' }}</td>
+                    <td>{{ ch.quality_score or '-' }}</td>
+                    <td>
+                        <a href="/chapters/{{ ch.id }}" class="btn btn-secondary btn-sm">查看</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="color:#64748b; padding:20px 0;">暂无章节</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

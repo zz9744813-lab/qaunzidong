@@ -1,19 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Chapter {{ chapter.chapter_no }} - {{ novel.title }}</title>
-</head>
-<body>
-    <h1>第 {{ chapter.chapter_no }} 章 - {{ chapter.title or "未命名" }}</h1>
-    
-    <h2>细纲</h2>
-    <pre>{{ chapter.outline }}</pre>
-    
-    <h2>正文</h2>
-    <pre>{{ chapter.final_text or chapter.draft_text }}</pre>
-    
-    <h2>质量分: {{ chapter.quality_score }}</h2>
-    
-    <a href="/novels/{{ novel.id }}">返回小说</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}章节详情 - 小说自动工厂{% endblock %}
+{% block page_title %}第{{ chapter.chapter_no }}章{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>章节信息</h3>
+    </div>
+    <div class="card-body">
+        <p><strong>小说：</strong> {{ novel.title if novel else '未知' }}</p>
+        <p><strong>章节号：</strong> 第{{ chapter.chapter_no }}章</p>
+        <p><strong>标题：</strong> {{ chapter.title or '未命名' }}</p>
+        <p><strong>状态：</strong> {{ chapter.status or '未知' }}</p>
+        <p><strong>字数：</strong> {{ chapter.word_count or '-' }}</p>
+        <p><strong>质量分：</strong> {{ chapter.quality_score or '-' }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>正文内容</h3>
+    </div>
+    <div class="card-body" style="max-width: 860px; margin: 0 auto; line-height: 1.85; font-size: 16px; padding: 40px 30px; background: #fff; border-radius: 8px;">
+        {% if chapter.final_text %}
+            {{ chapter.final_text | replace('\n', '<br>') | safe }}
+        {% elif chapter.draft_text %}
+            {{ chapter.draft_text | replace('\n', '<br>') | safe }}
+        {% else %}
+            <p style="color:#64748b">暂无正文内容</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top: 24px; text-align: center;">
+    <a href="/novels/{{ chapter.novel_id }}" class="btn btn-secondary">返回小说详情</a>
+</div>
+{% endblock %}
