@@ -1,8 +1,8 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from app.database import SessionLocal
-from app.models import Novel, Chapter
-from app.services.chapter_service import ChapterService
+from app.models import Novel, Chapter, GenerationTask
+from app.services.task_service import TaskService
 from app.config import settings
 from loguru import logger
 import threading
@@ -35,10 +35,16 @@ def auto_generate_job():
                     logger.info(f"Novel {novel.id} reached daily limit ({max_daily})")
                     continue
 
-                # 调用 ChapterService（锁逻辑已下沉到 service 中）
-                chapter_service = ChapterService(db)
-                chapter_service.generate_next_chapter(novel.id)
-                logger.info(f"Auto generated chapter for novel {novel.id}")
+                active_task = db.query(GenerationTask).filter(
+                    GenerationTask.novel_id == novel.id,
+                    GenerationTask.status.in_(["pending", "running"])
+                ).first()
+                if active_task:
+                    logger.info(f"Novel {novel.id} already has active task #{active_task.id}, skip auto queue")
+                    continue
+
+                task = TaskService(db).create_task(novel.id, "run_pipeline", total_steps=9)
+                logger.info(f"Queued auto pipeline task #{task.id} for novel {novel.id}")
 
             except Exception as e:
                 logger.error(f"Auto generate failed for novel {novel.id}: {str(e)}")

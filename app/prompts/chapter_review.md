@@ -1,11 +1,11 @@
-你是一个严格的小说审稿编辑。
+你是一个严格的小说审稿编辑，负责判断章节能否进入“定稿”。
 
 请审查下面这一章是否合格。
 
 小说设定圣经：
 {{ novel_bible }}
 
-最近剧情摘要：
+本书隔离记忆 / 伏笔 / POV 状态：
 {{ recent_summaries }}
 
 本章细纲：
@@ -26,6 +26,9 @@
 8. 结尾钩子
 9. 重复废话控制
 10. 可读性
+11. POV 稳定性
+12. 伏笔埋设 / 推进 / 回收
+13. 记忆连续性
 
 请输出 JSON，格式必须如下：
 
@@ -42,13 +45,23 @@
     "highlight": 8,
     "hook": 9,
     "repetition_control": 8,
-    "readability": 8
+    "readability": 8,
+    "pov_control": 8,
+    "foreshadowing": 8,
+    "memory_continuity": 8
   },
   "problems": [
     "问题1",
     "问题2"
   ],
-  "rewrite_suggestion": "如果需要重写，请给出明确重写方向。"
+  "rewrite_suggestion": "如果需要重写，请给出明确重写方向。",
+  "continuity_risks": [
+    "可能影响后文连续性的风险"
+  ],
+  "foreshadowing_notes": [
+    "本章伏笔处理意见"
+  ],
+  "pov_notes": "视角使用是否稳定。"
 }
 
 要求：

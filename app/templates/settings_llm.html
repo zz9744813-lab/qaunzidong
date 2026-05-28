@@ -17,6 +17,7 @@
                     <th>名称</th>
                     <th>角色</th>
                     <th>模型</th>
+                    <th>Tokens</th>
                     <th>Base URL</th>
                     <th>状态</th>
                     <th width="320">操作</th>
@@ -28,6 +29,7 @@
                     <td>{{ p.name }}</td>
                     <td><span class="badge badge-draft">{{ p.role }}</span></td>
                     <td>{{ p.model }}</td>
+                    <td>{{ p.max_tokens }}</td>
                     <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ p.base_url }}</td>
                     <td>
                         {% if p.enabled %}

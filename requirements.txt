@@ -10,3 +10,4 @@ apscheduler
 loguru
 python-multipart
 markdown
+cryptography

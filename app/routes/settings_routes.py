@@ -4,10 +4,23 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import LLMProvider
 from app.main import templates
+from app.utils import decrypt_api_key
 import os
 import requests
 
 router = APIRouter()
+
+
+def _normalize_provider_params(temperature: str, max_tokens: int, timeout_seconds: int, retry_times: int):
+    try:
+        temp = float(temperature)
+    except (TypeError, ValueError):
+        temp = 0.85
+    temp = max(0.0, min(temp, 2.0))
+    max_tokens = max(1, min(int(max_tokens or 8000), 16000))
+    timeout_seconds = max(30, min(int(timeout_seconds or 180), 600))
+    retry_times = max(1, min(int(retry_times or 3), 5))
+    return f"{temp:g}", max_tokens, timeout_seconds, retry_times
 
 @router.get("/settings/llm", response_class=HTMLResponse)
 async def llm_settings(request: Request, db: Session = Depends(get_db)):
@@ -31,6 +44,9 @@ async def create_llm_provider(
     retry_times: int = Form(3),
     db: Session = Depends(get_db)
 ):
+    temperature, max_tokens, timeout_seconds, retry_times = _normalize_provider_params(
+        temperature, max_tokens, timeout_seconds, retry_times
+    )
     provider = LLMProvider(
         name=name,
         role=role,
@@ -71,6 +87,9 @@ async def update_llm_provider(
     provider = db.query(LLMProvider).filter(LLMProvider.id == provider_id).first()
     if not provider:
         raise HTTPException(status_code=404)
+    temperature, max_tokens, timeout_seconds, retry_times = _normalize_provider_params(
+        temperature, max_tokens, timeout_seconds, retry_times
+    )
     
     provider.name = name
     provider.role = role
@@ -110,7 +129,6 @@ async def test_llm_provider(provider_id: int, db: Session = Depends(get_db)):
     
     try:
         headers = {
-            from app.utils import decrypt_api_key
             "Authorization": f"Bearer {decrypt_api_key(provider.api_key_encrypted)}",
             "Content-Type": "application/json"
         }

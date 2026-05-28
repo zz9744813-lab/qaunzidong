@@ -6,7 +6,7 @@ from app.utils import render_prompt
 class BibleService:
     def __init__(self, db=None):
         self.db = db or SessionLocal()
-        self.llm = LLMService()
+        self.llm = LLMService(self.db)
 
     def generate_bible(self, novel_id: int) -> NovelBible:
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()

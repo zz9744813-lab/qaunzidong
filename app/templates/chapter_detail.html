@@ -1,66 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}章节详情 - 小说自动工厂{% endblock %}
-{% block page_title %}第{{ chapter.chapter_no }}章{% endblock %}
+{% block title %}第 {{ chapter.chapter_no }} 章 - {{ novel.title }}{% endblock %}
+{% block page_title %}{{ novel.title }} / 第 {{ chapter.chapter_no }} 章{% endblock %}
 
 {% block content %}
-<div class="card">
+<section class="studio-hero">
+    <div>
+        <p class="eyebrow">Chapter #{{ chapter.id }}</p>
+        <h3>第 {{ chapter.chapter_no }} 章：{{ chapter.title or '未命名章节' }}</h3>
+        <p>{{ chapter.status }} · {{ chapter.word_count or 0 }} 字 · 质量分 {{ chapter.quality_score or '-' }}</p>
+    </div>
+    <div class="hero-actions">
+        <a href="/novels/{{ novel.id }}" class="btn btn-secondary">返回小说</a>
+        <a href="/novels/{{ novel.id }}/read" class="btn btn-secondary">阅读整本</a>
+        {% if md_exists %}<a href="/chapters/{{ chapter.id }}/export/md" class="btn btn-primary">下载 MD</a>{% endif %}
+        {% if txt_exists %}<a href="/chapters/{{ chapter.id }}/export/txt" class="btn btn-secondary">下载 TXT</a>{% endif %}
+    </div>
+</section>
+
+<section class="card manuscript-card">
     <div class="card-header">
-        <h3>章节信息</h3>
+        <div>
+            <h3>正文阅读</h3>
+            <p class="muted">这里显示的是当前章节的定稿正文；如果还没定稿，会显示草稿。</p>
+        </div>
     </div>
     <div class="card-body">
-        <p><strong>小说：</strong> {{ novel.title if novel else '未知' }}</p>
-        <p><strong>章节号：</strong> 第{{ chapter.chapter_no }}章</p>
-        <p><strong>标题：</strong> {{ chapter.title or '未命名' }}</p>
-        <p><strong>状态：</strong> {{ chapter.status or '未知' }}</p>
-        <p><strong>字数：</strong> {{ chapter.word_count or '-' }}</p>
-        <p><strong>质量分：</strong> {{ chapter.quality_score or '-' }}</p>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h3>细纲 (Outline)</h3>
-    </div>
-    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
-        {{ chapter.outline or '暂无细纲' }}
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h3>正文内容</h3>
-    </div>
-    <div class="card-body" style="max-width: 860px; margin: 0 auto; line-height: 1.85; font-size: 16px; padding: 40px 30px; background: #fff; border-radius: 8px;">
-        {% if chapter.final_text %}
-            {{ chapter.final_text | replace('\n', '<br>') | safe }}
-        {% elif chapter.draft_text %}
-            {{ chapter.draft_text | replace('\n', '<br>') | safe }}
+        <div class="export-paths">
+            <span>MD：{{ md_path }}</span>
+            <span>TXT：{{ txt_path }}</span>
+        </div>
+        {% set body_text = chapter.final_text or chapter.draft_text or '' %}
+        {% if body_text %}
+        <article class="reader-prose">{{ body_text }}</article>
         {% else %}
-            <p style="color:#64748b">暂无正文内容</p>
+        <div class="empty-state compact">
+            <h3>这一章还没有正文</h3>
+            <p>等生产线完成初稿或定稿后，这里会显示正文。</p>
+        </div>
         {% endif %}
     </div>
-</div>
+</section>
 
-<div class="card">
-    <div class="card-header">
-        <h3>质检结果 (Review)</h3>
-    </div>
-    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
-        {{ chapter.review_result or '暂无质检结果' }}
-    </div>
-</div>
+<div class="studio-grid">
+    <section class="card">
+        <div class="card-header">
+            <h3>章节生产卡</h3>
+        </div>
+        <div class="card-body">
+            {% if chapter.outline %}
+            <pre class="text-preview">{{ chapter.outline }}</pre>
+            {% else %}
+            <div class="empty-state compact">
+                <h3>没有生产卡</h3>
+                <p>旧章节可能没有保存生产卡。</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
 
-<div class="card">
-    <div class="card-header">
-        <h3>章节摘要 (Summary)</h3>
-    </div>
-    <div class="card-body" style="white-space: pre-wrap; background:#f8fafc; padding:20px; border-radius:8px;">
-        {{ chapter.summary or '暂无摘要' }}
-    </div>
-</div>
-
-<div style="margin-top: 24px; text-align: center;">
-    <a href="/novels/{{ chapter.novel_id }}" class="btn btn-secondary">返回小说详情</a>
+    <section class="card">
+        <div class="card-header">
+            <h3>审核记录</h3>
+        </div>
+        <div class="card-body">
+            {% if chapter.review_result %}
+            <pre class="text-preview">{{ chapter.review_result }}</pre>
+            {% else %}
+            <div class="empty-state compact">
+                <h3>没有审核记录</h3>
+                <p>审核步骤完成后会显示连续性、POV、伏笔等检查结果。</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
 </div>
 {% endblock %}

@@ -1,299 +1,254 @@
 {% extends "base.html" %}
 
-{% block title %}Agent 工作台 - 任务 #{{ task.id }}{% endblock %}
-{% block page_title %}Agent 工作台{% endblock %}
+{% block title %}任务 #{{ task.id }} - 小说自动工厂{% endblock %}
+{% block page_title %}任务 #{{ task.id }}{% endblock %}
 
 {% block content %}
-<style>
-.agent-console {
-    display: grid;
-    grid-template-columns: 280px 1fr 320px;
-    gap: 16px;
-    height: calc(100vh - 180px);
-    min-height: 600px;
-}
-.step-list {
-    background: #1e2937;
-    border-radius: 8px;
-    padding: 12px;
-    overflow-y: auto;
-}
-.step-item {
-    padding: 10px 12px;
-    margin-bottom: 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid #334155;
-}
-.step-item:hover { background: #334155; }
-.step-item.active { background: #3b82f6; border-color: #60a5fa; }
-.step-item .step-name { font-weight: 600; font-size: 14px; }
-.step-item .step-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-.step-item.failed { border-color: #ef4444; }
-.step-item.success { border-color: #22c55e; }
-
-.detail-panel {
-    background: #1e2937;
-    border-radius: 8px;
-    padding: 20px;
-    overflow-y: auto;
-}
-.detail-panel h4 { margin: 0 0 16px; color: #e2e8f0; }
-.detail-row { margin-bottom: 14px; }
-.detail-row label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-.detail-row .value { background: #0f172a; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
-
-.log-panel {
-    background: #0f172a;
-    border-radius: 8px;
-    padding: 12px;
-    font-family: monospace;
-    font-size: 12px;
-    overflow-y: auto;
-    color: #94a3b8;
-}
-.log-line { margin-bottom: 4px; }
-.log-line.error { color: #f87171; }
-.log-line.success { color: #4ade80; }
-
-.expand-btn {
-    background: #334155;
-    color: #e2e8f0;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    margin-top: 6px;
-}
-.expand-btn:hover { background: #475569; }
-</style>
-
-<div class="agent-console">
-    <!-- 左侧：步骤列表 -->
-    <div class="step-list">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="margin:0; font-size:15px;">执行步骤</h3>
-            <span id="step-count" style="font-size:12px; color:#64748b;"></span>
+<div class="task-shell" data-task-id="{{ task.id }}">
+    <div class="card task-overview">
+        <div class="card-header">
+            <div>
+                <p class="eyebrow">{{ task.task_type }}</p>
+                <h3 data-task-heading>{{ task.current_step or '等待执行' }}</h3>
+                <p class="muted">小说 #{{ task.novel_id }} · 创建于 {{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else '-' }}</p>
+            </div>
+            <span data-task-badge class="badge {% if task.status == 'success' %}badge-success{% elif task.status == 'failed' %}badge-failed{% elif task.status == 'running' or task.status == 'pending' %}badge-running{% elif task.status == 'cancelled' %}badge-paused{% else %}badge-draft{% endif %}">
+                {{ task.status }}
+            </span>
         </div>
-        
-        <div id="step-list-container">
-            {% for step in task.steps %}
-            <div class="step-item {% if step.status == 'failed' %}failed{% elif step.status == 'success' %}success{% endif %}" 
-                 data-step-id="{{ step.id }}" onclick="showStepDetail({{ step.id }})">
-                <div class="step-name">{{ step.step_name }}</div>
-                <div class="step-meta">
-                    {{ step.provider_role or 'main' }} · 
-                    <span class="badge {% if step.status == 'success' %}badge-success{% elif step.status == 'failed' %}badge-failed{% elif step.status == 'running' %}badge-running{% else %}badge-draft{% endif %}">
-                        {{ step.status }}
-                    </span>
+        <div class="card-body">
+            <div class="progress"><span data-progress-bar style="width: {{ task.progress or 0 }}%"></span></div>
+            <div class="progress-meta">
+                <span data-progress-label>{{ task.progress or 0 }}%</span>
+                <span data-step-count>{{ task.finished_steps or 0 }}/{{ task.total_steps or task.steps|length }} 步</span>
+            </div>
+            {% if task.error_message %}
+            <div class="alert alert-error" data-task-error>{{ task.error_message }}</div>
+            {% else %}
+            <div class="alert alert-error hidden" data-task-error></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="agent-console">
+        <aside class="step-list">
+            <div class="panel-title">
+                <h3>执行步骤</h3>
+                <span id="step-count">{{ task.steps|length }} 步</span>
+            </div>
+            <div id="step-list-container">
+                {% for step in task.steps %}
+                <button class="step-item {% if step.status == 'failed' %}failed{% elif step.status == 'success' %}success{% elif step.status == 'running' %}running{% endif %}"
+                        data-step-id="{{ step.id }}" type="button">
+                    <span class="step-name">{{ step.step_name }}</span>
+                    <span class="step-meta">{{ step.provider_role or 'main' }} · {{ step.status }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            <div class="step-empty {% if task.steps %}hidden{% endif %}" id="step-empty">任务已提交，等待 worker 创建步骤。</div>
+        </aside>
+
+        <section class="detail-panel" id="detail-panel">
+            <div class="empty-state compact">
+                <h3>选择一个步骤</h3>
+                <p>这里会显示 Prompt、模型原始输出、解析结果和错误信息。</p>
+            </div>
+        </section>
+
+        <aside class="task-actions">
+            <div class="card">
+                <div class="card-header"><h3>操作</h3></div>
+                <div class="card-body action-stack">
+                    <button onclick="cancelTask()" class="btn btn-danger" data-cancel {% if task.status not in ['pending', 'running'] %}disabled{% endif %}>取消任务</button>
+                    <button onclick="retryTask()" class="btn btn-secondary" data-retry {% if task.status not in ['failed', 'cancelled'] %}disabled{% endif %}>重新提交</button>
+                    <button onclick="refreshTask(true)" class="btn btn-secondary">刷新</button>
+                    <a href="/novels/{{ task.novel_id }}" class="btn btn-secondary">返回小说</a>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- 中间：步骤详情 -->
-    <div class="detail-panel" id="detail-panel">
-        <div style="text-align:center; color:#64748b; padding-top:80px;">
-            <p>← 点击左侧步骤查看详情</p>
-        </div>
-    </div>
-
-    <!-- 右侧：实时日志 -->
-    <div>
-        <div class="log-panel" id="log-panel" style="height: 420px;">
-            <div style="color:#64748b; margin-bottom:8px;">实时日志</div>
-            <div id="log-content"></div>
-        </div>
-        
-        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
-            <button onclick="cancelTask()" class="btn btn-danger" style="width:100%">取消任务</button>
-            <button onclick="retryTask()" class="btn btn-secondary" style="width:100%">重试整个任务</button>
-            <button onclick="refreshTask()" class="btn btn-secondary" style="width:100%">手动刷新</button>
-            <a href="/novels/{{ task.novel_id }}" class="btn btn-secondary" style="width:100%; text-align:center;">返回小说</a>
-        </div>
+            <div class="card">
+                <div class="card-header"><h3>运行日志</h3></div>
+                <div class="card-body">
+                    <div class="log-panel" id="log-content"></div>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
 
 <script>
-let currentTaskId = {{ task.id }};
+const currentTaskId = {{ task.id }};
 let currentStepId = null;
 let pollInterval = null;
+let lastStatus = '';
 
-function showStepDetail(stepId) {
-    // 高亮选中
-    document.querySelectorAll('.step-item').forEach(el => el.classList.remove('active'));
-    const item = document.querySelector(`[data-step-id="${stepId}"]`);
-    if (item) item.classList.add('active');
-    
-    currentStepId = stepId;
-    
-    // 从 API 获取最新数据
-    fetch(`/api/tasks/${currentTaskId}`)
-        .then(r => r.json())
-        .then(data => {
-            const step = data.steps.find(s => s.id === stepId);
-            if (!step) return;
-            
-            const html = `
-                <h4>${step.step_name}</h4>
-                
-                <div class="detail-row">
-                    <label>状态</label>
-                    <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}">${step.status}</span>
-                </div>
-                
-                <div class="detail-row">
-                    <label>角色 / 模型</label>
-                    <div class="value">${step.provider_role || '-'} / ${step.model_name || '-'}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <label>开始 / 结束 / 耗时</label>
-                    <div class="value">${step.started_at || '-'} → ${step.finished_at || '-'} 
-                    ${step.started_at && step.finished_at ? '(' + ((new Date(step.finished_at) - new Date(step.started_at))/1000).toFixed(1) + 's)' : ''}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <label>输入 Prompt <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
-                    <div class="value" style="max-height:120px; overflow:hidden;">${step.input_prompt || '无'}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <label>模型原始输出 <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
-                    <div class="value" style="max-height:120px; overflow:hidden;">${step.raw_output || '无'}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <label>解析结果 <button class="expand-btn" onclick="toggleExpand(this)">展开</button></label>
-                    <div class="value" style="max-height:120px; overflow:hidden;">${step.parsed_output || '无'}</div>
-                </div>
-                
-                ${step.error_message ? `
-                <div class="detail-row">
-                    <label style="color:#f87171">错误信息</label>
-                    <div class="value" style="color:#fecaca; background:#3f1f1f;">${step.error_message}</div>
-                </div>` : ''}
-            `;
-            
-            document.getElementById('detail-panel').innerHTML = html;
-        });
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 }
 
-function toggleExpand(btn) {
-    const valueDiv = btn.parentElement.nextElementSibling;
-    if (valueDiv.style.maxHeight === '120px' || !valueDiv.style.maxHeight) {
-        valueDiv.style.maxHeight = 'none';
-        btn.textContent = '收起';
-    } else {
-        valueDiv.style.maxHeight = '120px';
-        btn.textContent = '展开';
+function badgeClass(status) {
+    if (status === 'success') return 'badge-success';
+    if (status === 'failed') return 'badge-failed';
+    if (status === 'running' || status === 'pending') return 'badge-running';
+    if (status === 'cancelled') return 'badge-paused';
+    return 'badge-draft';
+}
+
+function stepClass(status) {
+    if (status === 'success') return 'success';
+    if (status === 'failed') return 'failed';
+    if (status === 'running') return 'running';
+    return '';
+}
+
+function formatDuration(started, finished) {
+    if (!started || !finished) return '-';
+    const seconds = (new Date(finished) - new Date(started)) / 1000;
+    if (!Number.isFinite(seconds)) return '-';
+    return `${seconds.toFixed(1)}s`;
+}
+
+function addLog(message, type = 'info') {
+    const box = document.getElementById('log-content');
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+}
+
+function renderSteps(data) {
+    const container = document.getElementById('step-list-container');
+    const empty = document.getElementById('step-empty');
+    container.innerHTML = '';
+    empty.classList.toggle('hidden', data.steps.length > 0);
+    document.getElementById('step-count').textContent = `${data.steps.length} 步`;
+
+    data.steps.forEach(step => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `step-item ${stepClass(step.status)} ${step.id === currentStepId ? 'active' : ''}`;
+        btn.dataset.stepId = step.id;
+        btn.innerHTML = `
+            <span class="step-name">${escapeHTML(step.step_name)}</span>
+            <span class="step-meta">${escapeHTML(step.provider_role || 'main')} · ${escapeHTML(step.status)}</span>
+        `;
+        btn.addEventListener('click', () => showStepDetail(step.id, data));
+        container.appendChild(btn);
+    });
+
+    if (!currentStepId && data.steps.length) {
+        showStepDetail(data.steps[0].id, data);
     }
 }
 
-function refreshTask() {
+function renderTask(data) {
+    document.querySelector('[data-task-heading]').textContent = data.current_step || '等待执行';
+    const badge = document.querySelector('[data-task-badge]');
+    badge.className = `badge ${badgeClass(data.status)}`;
+    badge.textContent = data.status;
+    document.querySelector('[data-progress-bar]').style.width = `${data.progress || 0}%`;
+    document.querySelector('[data-progress-label]').textContent = `${data.progress || 0}%`;
+    const finished = data.steps.filter(step => step.status === 'success' || step.status === 'failed' || step.status === 'skipped').length;
+    document.querySelector('[data-step-count]').textContent = `${finished}/${data.total_steps || data.steps.length} 步`;
+
+    const errorBox = document.querySelector('[data-task-error]');
+    if (data.error_message) {
+        errorBox.textContent = data.error_message;
+        errorBox.classList.remove('hidden');
+    } else {
+        errorBox.textContent = '';
+        errorBox.classList.add('hidden');
+    }
+
+    document.querySelector('[data-cancel]').disabled = !['pending', 'running'].includes(data.status);
+    document.querySelector('[data-retry]').disabled = !['failed', 'cancelled'].includes(data.status);
+
+    if (data.status !== lastStatus) {
+        addLog(`任务状态变为 ${data.status}`, data.status === 'failed' ? 'error' : data.status === 'success' ? 'success' : 'info');
+        lastStatus = data.status;
+    }
+
+    if (['success', 'failed', 'cancelled'].includes(data.status) && pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        addLog('任务已结束，已停止自动刷新', data.status === 'success' ? 'success' : 'error');
+    }
+}
+
+function showStepDetail(stepId, data = null) {
+    currentStepId = stepId;
+    const apply = payload => {
+        document.querySelectorAll('.step-item').forEach(el => el.classList.toggle('active', Number(el.dataset.stepId) === stepId));
+        const step = payload.steps.find(item => item.id === stepId);
+        if (!step) return;
+
+        const detail = document.getElementById('detail-panel');
+        detail.innerHTML = `
+            <div class="detail-header">
+                <div>
+                    <p class="eyebrow">Step ${escapeHTML(step.step_order ?? '')}</p>
+                    <h3>${escapeHTML(step.step_name)}</h3>
+                </div>
+                <span class="badge ${badgeClass(step.status)}">${escapeHTML(step.status)}</span>
+            </div>
+            <div class="detail-grid">
+                <div><label>角色 / 模型</label><div class="value">${escapeHTML(step.provider_role || '-')} / ${escapeHTML(step.model_name || '-')}</div></div>
+                <div><label>耗时</label><div class="value">${formatDuration(step.started_at, step.finished_at)}</div></div>
+            </div>
+            ${step.error_message ? `<div class="alert alert-error">${escapeHTML(step.error_message)}</div>` : ''}
+            <details class="trace-block" open><summary>解析结果</summary><pre>${escapeHTML(step.parsed_output || '无')}</pre></details>
+            <details class="trace-block"><summary>模型原始输出</summary><pre>${escapeHTML(step.raw_output || '无')}</pre></details>
+            <details class="trace-block"><summary>输入 Prompt</summary><pre>${escapeHTML(step.input_prompt || '无')}</pre></details>
+        `;
+    };
+
+    if (data) {
+        apply(data);
+    } else {
+        fetch(`/api/tasks/${currentTaskId}`).then(r => r.json()).then(apply);
+    }
+}
+
+function refreshTask(manual = false) {
     fetch(`/api/tasks/${currentTaskId}`)
         .then(r => r.json())
         .then(data => {
-            // 重新渲染步骤列表
-            const container = document.getElementById('step-list-container');
-            container.innerHTML = '';
-            
-            data.steps.forEach(step => {
-                const div = document.createElement('div');
-                div.className = `step-item ${step.status === 'failed' ? 'failed' : step.status === 'success' ? 'success' : ''}`;
-                div.dataset.stepId = step.id;
-                div.onclick = () => showStepDetail(step.id);
-                div.innerHTML = `
-                    <div class="step-name">${step.step_name}</div>
-                    <div class="step-meta">
-                        ${step.provider_role || 'main'} · 
-                        <span class="badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}">
-                            ${step.status}
-                        </span>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-            
-            document.getElementById('step-count').textContent = `${data.steps.length} 步`;
-            
-            // 如果当前有选中步骤，刷新详情
-            if (currentStepId) {
-                showStepDetail(currentStepId);
-            }
-            
-            // 添加日志
-            addLog(`任务状态: ${data.status} | 进度 ${data.progress}%`);
-        });
-}
-
-function addLog(msg, type = 'info') {
-    const logContent = document.getElementById('log-content');
-    const line = document.createElement('div');
-    line.className = `log-line ${type}`;
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    logContent.appendChild(line);
-    logContent.scrollTop = logContent.scrollHeight;
-}
-
-function pollTask() {
-    if (pollInterval) clearInterval(pollInterval);
-    
-    pollInterval = setInterval(() => {
-        fetch(`/api/tasks/${currentTaskId}`)
-            .then(r => r.json())
-            .then(data => {
-                // 简单更新步骤状态
-                document.querySelectorAll('.step-item').forEach(item => {
-                    const stepId = parseInt(item.dataset.stepId);
-                    const step = data.steps.find(s => s.id === stepId);
-                    if (step) {
-                        const badge = item.querySelector('.badge');
-                        if (badge) {
-                            badge.className = `badge ${step.status === 'success' ? 'badge-success' : step.status === 'failed' ? 'badge-failed' : step.status === 'running' ? 'badge-running' : 'badge-draft'}`;
-                            badge.textContent = step.status;
-                        }
-                    }
-                });
-            });
-    }, 2500);
+            renderTask(data);
+            renderSteps(data);
+            if (currentStepId) showStepDetail(currentStepId, data);
+            if (manual) addLog('已刷新');
+        })
+        .catch(err => addLog(`刷新失败：${err}`, 'error'));
 }
 
 function cancelTask() {
     if (!confirm('确定取消此任务？')) return;
     fetch(`/api/tasks/${currentTaskId}/cancel`, { method: 'POST' })
-        .then(() => {
-            addLog('任务已取消', 'error');
-            refreshTask();
-        });
+        .then(() => refreshTask(true));
 }
 
 function retryTask() {
-    if (!confirm('确定重试整个任务？')) return;
+    if (!confirm('确定重新提交一个新任务？')) return;
     fetch(`/api/tasks/${currentTaskId}/retry`, { method: 'POST' })
-        .then(() => {
-            addLog('任务已重置为 pending，等待 Worker 执行');
-            setTimeout(refreshTask, 1000);
+        .then(r => r.json())
+        .then(data => {
+            if (data.task_id && data.task_id !== currentTaskId) {
+                window.location.href = `/tasks/${data.task_id}`;
+            } else {
+                refreshTask(true);
+            }
         });
 }
 
-// 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('step-count').textContent = `{{ task.steps|length }} 步`;
-    
-    // 默认选中第一个步骤
-    const firstStep = document.querySelector('.step-item');
-    if (firstStep) {
-        firstStep.click();
-    }
-    
-    // 启动轮询
-    pollTask();
-    
-    addLog('Agent 工作台已加载');
+    addLog('任务工作台已加载');
+    refreshTask();
+    pollInterval = setInterval(refreshTask, 3000);
 });
 </script>
 {% endblock %}

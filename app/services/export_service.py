@@ -19,13 +19,17 @@ class ExportService:
         novel_dir = os.path.join(self.export_dir, novel.title.replace(" ", "_"))
         os.makedirs(novel_dir, exist_ok=True)
 
+        md_path = os.path.join(novel_dir, f"chapter_{chapter.chapter_no:04d}.md")
+        txt_path = os.path.join(novel_dir, f"chapter_{chapter.chapter_no:04d}.txt")
+
         md_content = f"# 第 {chapter.chapter_no} 章 {chapter.title or ''}\n\n{chapter.final_text or chapter.draft_text or ''}"
-        with open(os.path.join(novel_dir, f"chapter_{chapter.chapter_no:04d}.md"), "w", encoding="utf-8") as f:
+        with open(md_path, "w", encoding="utf-8") as f:
             f.write(md_content)
 
         txt_content = f"第 {chapter.chapter_no} 章 {chapter.title or ''}\n\n{chapter.final_text or chapter.draft_text or ''}"
-        with open(os.path.join(novel_dir, f"chapter_{chapter.chapter_no:04d}.txt"), "w", encoding="utf-8") as f:
+        with open(txt_path, "w", encoding="utf-8") as f:
             f.write(txt_content)
+        return md_path
 
     def export_full_novel(self, novel_id: int, format: str = "markdown"):
         novel = self.db.query(Novel).filter(Novel.id == novel_id).first()

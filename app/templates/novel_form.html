@@ -4,45 +4,73 @@
 {% block page_title %}创建新小说{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 720px; margin: 0 auto;">
+<div class="card" style="max-width: 920px; margin: 0 auto;">
     <div class="card-header">
-        <h3>新建小说项目</h3>
+        <div>
+            <p class="eyebrow">New Project</p>
+            <h3>创建小说生产项目</h3>
+            <p class="muted">先给 Agent 清楚的选题方向，后续 Bible、总纲、POV 和伏笔都会围绕这些约束生成。</p>
+        </div>
     </div>
     <div class="card-body">
         <form action="/novels/new" method="post">
-            <div class="form-group">
-                <label for="title">小说标题 <span style="color:#ef4444">*</span></label>
-                <input type="text" id="title" name="title" class="form-control" placeholder="例如：暗影斗罗" required>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="title">小说标题</label>
+                    <input type="text" id="title" name="title" class="form-control" placeholder="例如：肥宅修仙" required>
+                </div>
+                <div class="form-group">
+                    <label for="genre">题材类型</label>
+                    <input type="text" id="genre" name="genre" class="form-control" placeholder="仙侠 / 都市 / 科幻 / 玄幻" required>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="style">写作风格</label>
+                    <input type="text" id="style" name="style" class="form-control" placeholder="智斗、热血、轻松、群像、慢热" required>
+                </div>
+                <div class="form-group">
+                    <label for="pov_preference">POV 偏好</label>
+                    <input type="text" id="pov_preference" name="pov_preference" class="form-control" placeholder="主角单 POV / 多 POV / 禁止反派 POV">
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="genre">题材类型 <span style="color:#ef4444">*</span></label>
-                <input type="text" id="genre" name="genre" class="form-control" placeholder="玄幻 / 都市 / 科幻 / 仙侠" required>
+                <label for="reader_promise">读者承诺 / 核心爽点</label>
+                <textarea id="reader_promise" name="reader_promise" class="form-control" placeholder="这本书持续给读者什么体验？比如：废柴靠信息差修仙、每卷都有智斗翻盘、爽点来自资源掠夺和身份反转。"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="style">写作风格 <span style="color:#ef4444">*</span></label>
-                <input type="text" id="style" name="style" class="form-control" placeholder="热血 / 智斗 / 情感 / 幽默" required>
+                <label for="description">基础设想</label>
+                <textarea id="description" name="description" class="form-control" placeholder="主角、世界、开局冲突、你已经想好的设定..."></textarea>
             </div>
 
-            <div class="form-group">
-                <label for="description">小说简介</label>
-                <textarea id="description" name="description" class="form-control" placeholder="简单描述小说背景和主线..."></textarea>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="must_have">必须包含</label>
+                    <textarea id="must_have" name="must_have" class="form-control" placeholder="必须出现的角色、能力、关系线、伏笔、桥段。"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="avoid">禁止 / 避雷</label>
+                    <textarea id="avoid" name="avoid" class="form-control" placeholder="不能写崩的点、不要出现的套路、不能越界的关系。"></textarea>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="target_words">目标总字数</label>
-                <input type="number" id="target_words" name="target_words" class="form-control" value="1000000">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="target_words">目标总字数</label>
+                    <input type="number" id="target_words" name="target_words" class="form-control" min="10000" max="10000000" value="1000000">
+                </div>
+                <div class="form-group">
+                    <label for="chapter_words">单章字数</label>
+                    <input type="number" id="chapter_words" name="chapter_words" class="form-control" min="800" max="12000" value="3500">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="chapter_words">单章字数</label>
-                <input type="number" id="chapter_words" name="chapter_words" class="form-control" value="3500">
-            </div>
-
-            <div style="display: flex; gap: 16px; margin-top: 32px;">
-                <button type="submit" class="btn btn-primary" style="flex:1">创建小说</button>
-                <a href="/novels" class="btn btn-secondary" style="flex:1">返回列表</a>
+            <div class="button-row" style="margin-top: 26px;">
+                <button type="submit" class="btn btn-primary">创建项目</button>
+                <a href="/novels" class="btn btn-secondary">返回列表</a>
             </div>
         </form>
     </div>

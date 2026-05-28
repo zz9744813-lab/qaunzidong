@@ -4,57 +4,69 @@
 {% block page_title %}小说项目{% endblock %}
 
 {% block content %}
-<!-- 统计卡片 -->
+<div class="page-actions">
+    <div>
+        <p class="eyebrow">Workspace</p>
+        <h3>项目总览</h3>
+    </div>
+    <a href="/novels/new" class="btn btn-primary">创建新小说</a>
+</div>
+
 <div class="stats-grid">
     <div class="stat-card">
         <div class="label">小说总数</div>
-        <div class="value">{{ stats.total_novels if stats else (novels|length if novels else 0) }}</div>
+        <div class="value">{{ stats.total_novels if stats else 0 }}</div>
     </div>
     <div class="stat-card">
-        <div class="label">运行中</div>
-        <div class="value">{{ stats.running_novels if stats else (novels|selectattr('status', 'equalto', 'running')|list|length if novels else 0) }}</div>
+        <div class="label">自动运行</div>
+        <div class="value">{{ stats.running_novels if stats else 0 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">执行中任务</div>
+        <div class="value">{{ stats.active_tasks if stats else 0 }}</div>
     </div>
     <div class="stat-card">
         <div class="label">累计章节</div>
-        <div class="value">{{ stats.total_chapters if stats else '-' }}</div>
+        <div class="value">{{ stats.total_chapters if stats else 0 }}</div>
     </div>
     <div class="stat-card">
         <div class="label">累计字数</div>
-        <div class="value">{{ stats.total_words if stats else '-' }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">失败任务数</div>
-        <div class="value">{{ stats.failed_tasks if stats else 0 }}</div>
+        <div class="value">{{ stats.total_words if stats else 0 }}</div>
     </div>
 </div>
 
-<!-- 小说列表 -->
 <div class="card">
     <div class="card-header">
-        <h3>我的小说</h3>
-        <a href="/novels/new" class="btn btn-primary btn-sm">+ 创建新小说</a>
+        <div>
+            <h3>我的小说</h3>
+            <p class="muted">当前任务会直接显示在列表里，避免重复提交和盲等。</p>
+        </div>
     </div>
-    <div class="card-body">
+    <div class="card-body table-wrap">
         {% if novels %}
-        <table class="table">
+        <table class="table project-table">
             <thead>
                 <tr>
-                    <th>标题</th>
-                    <th>类型</th>
+                    <th>项目</th>
                     <th>状态</th>
-                    <th>当前章节</th>
-                    <th>创建时间</th>
-                    <th width="220">操作</th>
+                    <th>Bible</th>
+                    <th>章节</th>
+                    <th>任务</th>
+                    <th width="260">操作</th>
                 </tr>
             </thead>
             <tbody>
                 {% for novel in novels %}
+                {% set active = novel.active_task %}
+                {% set latest = novel.latest_task %}
                 <tr>
-                    <td><strong>{{ novel.title }}</strong></td>
-                    <td>{{ novel.genre or '-' }}</td>
+                    <td>
+                        <a class="project-title" href="/novels/{{ novel.id }}">{{ novel.title }}</a>
+                        <div class="muted small">{{ novel.genre or '未设置类型' }} · {{ novel.style or '未设置风格' }}</div>
+                    </td>
                     <td>
                         {% if novel.status == 'running' %}
-                            <span class="badge badge-running">运行中</span>
+                            <span class="badge badge-running">自动运行</span>
                         {% elif novel.status == 'paused' %}
                             <span class="badge badge-paused">已暂停</span>
                         {% elif novel.status == 'failed' %}
@@ -62,29 +74,61 @@
                         {% else %}
                             <span class="badge badge-draft">草稿</span>
                         {% endif %}
+                        {% if novel.failed_times %}
+                            <div class="muted small">失败 {{ novel.failed_times }} 次</div>
+                        {% endif %}
                     </td>
-                    <td>{{ novel.current_chapter_no or 0 }}</td>
-                    <td>{{ novel.created_at.strftime('%Y-%m-%d %H:%M') if novel.created_at else '-' }}</td>
                     <td>
-                        <a href="/novels/{{ novel.id }}" class="btn btn-secondary btn-sm">详情</a>
-                        <form action="/novels/{{ novel.id }}/start" method="post" style="display:inline">
-                            <button type="submit" class="btn btn-success btn-sm">启动</button>
-                        </form>
-                        <form action="/novels/{{ novel.id }}/pause" method="post" style="display:inline">
-                            <button type="submit" class="btn btn-secondary btn-sm">暂停</button>
-                        </form>
-                        <form action="/novels/{{ novel.id }}/export-full" method="post" style="display:inline">
-                            <button type="submit" class="btn btn-primary btn-sm" data-confirm="确定导出整本小说？">导出</button>
-                        </form>
+                        {% if novel.has_bible %}
+                            <span class="badge badge-success">已生成</span>
+                        {% else %}
+                            <span class="badge badge-draft">未生成</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ novel.current_chapter_no or 0 }}</strong>
+                        <div class="muted small">记录 {{ novel.chapter_count or 0 }} 章</div>
+                    </td>
+                    <td>
+                        {% if active %}
+                            <a href="/tasks/{{ active.id }}" class="task-link">#{{ active.id }} {{ active.task_type }}</a>
+                            <div class="progress mini"><span style="width: {{ active.progress or 0 }}%"></span></div>
+                            <div class="muted small">{{ active.current_step or active.status }}</div>
+                        {% elif latest %}
+                            <span class="badge {% if latest.status == 'success' %}badge-success{% elif latest.status == 'failed' %}badge-failed{% elif latest.status == 'cancelled' %}badge-paused{% else %}badge-draft{% endif %}">
+                                {{ latest.status }}
+                            </span>
+                            <div class="muted small">最近任务 #{{ latest.id }}</div>
+                        {% else %}
+                            <span class="muted">暂无任务</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="button-row">
+                            <a href="/novels/{{ novel.id }}" class="btn btn-secondary btn-sm">打开</a>
+                            {% if novel.status == 'running' %}
+                            <form action="/novels/{{ novel.id }}/pause" method="post">
+                                <button type="submit" class="btn btn-secondary btn-sm">暂停</button>
+                            </form>
+                            {% else %}
+                            <form action="/novels/{{ novel.id }}/start" method="post">
+                                <button type="submit" class="btn btn-success btn-sm">启动</button>
+                            </form>
+                            {% endif %}
+                            <form action="/novels/{{ novel.id }}/export-full" method="post">
+                                <button type="submit" class="btn btn-primary btn-sm" data-confirm="确定导出整本小说？">导出</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <div style="text-align:center; padding:40px 0; color:#64748b;">
-            <p>还没有小说</p>
-            <a href="/novels/new" class="btn btn-primary" style="margin-top:16px">立即创建第一本小说</a>
+        <div class="empty-state">
+            <h3>还没有小说</h3>
+            <p>先创建一个项目，再生成 Bible 和章节。</p>
+            <a href="/novels/new" class="btn btn-primary">创建第一本小说</a>
         </div>
         {% endif %}
     </div>

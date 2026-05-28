@@ -20,18 +20,31 @@ class TaskService:
         self.db.refresh(task)
         return task
 
-    def update_task_status(self, task_id: int, status: str, current_step: str = None, progress: int = None, total_steps: int = None):
+    def update_task_status(
+        self,
+        task_id: int,
+        status: str,
+        current_step: str = None,
+        progress: int = None,
+        total_steps: int = None,
+        error_message: str = None,
+        result_data: str = None,
+    ):
         task = self.db.query(GenerationTask).filter(GenerationTask.id == task_id).first()
         if not task:
             return None
         
         task.status = status
-        if current_step:
+        if current_step is not None:
             task.current_step = current_step
         if progress is not None:
             task.progress = progress
         if total_steps is not None:
             task.total_steps = total_steps
+        if error_message is not None:
+            task.error_message = error_message
+        if result_data is not None:
+            task.result_data = result_data
         
         if status == "running" and not task.started_at:
             task.started_at = datetime.utcnow()
@@ -65,23 +78,29 @@ class TaskService:
             return None
         
         step.status = status
-        if input_prompt:
+        if input_prompt is not None:
             step.input_prompt = input_prompt
-        if raw_output:
+        if raw_output is not None:
             step.raw_output = raw_output
-        if parsed_output:
+        if parsed_output is not None:
             step.parsed_output = parsed_output
-        if error_message:
+        if error_message is not None:
             step.error_message = error_message
-        if provider_role:
+        if provider_role is not None:
             step.provider_role = provider_role
-        if model_name:
+        if model_name is not None:
             step.model_name = model_name
         
         if status == "running":
             step.started_at = datetime.utcnow()
         if status in ["success", "failed", "skipped"]:
             step.finished_at = datetime.utcnow()
+            task = self.db.query(GenerationTask).filter(GenerationTask.id == step.task_id).first()
+            if task:
+                task.finished_steps = self.db.query(GenerationStep).filter(
+                    GenerationStep.task_id == step.task_id,
+                    GenerationStep.status.in_(["success", "failed", "skipped"])
+                ).count()
         
         self.db.commit()
         return step
